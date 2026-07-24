@@ -5120,6 +5120,45 @@
     }
   </script>
 
+  <!-- ===== FIREBASE SDK ===== -->
+  <script type="module">
+    // Firebase SDK via CDN (modular)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js";
+    import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    // Configuração do projeto Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2XWTFxjX56Le2TXTR-FRg0BI6iLLgGXc",
+      authDomain: "base-monitoramento-ppt.firebaseapp.com",
+      projectId: "base-monitoramento-ppt",
+      storageBucket: "base-monitoramento-ppt.firebasestorage.app",
+      messagingSenderId: "451296266787",
+      appId: "1:451296266787:web:d95c502446702d23e0bf96",
+      measurementId: "G-MS3VRG4LYD"
+    };
+
+    // Inicializa Firebase
+    const app = initializeApp(firebaseConfig);
+
+    // Inicializa Analytics
+    const analytics = getAnalytics(app);
+    logEvent(analytics, "page_view", {
+      page_title: "Relatório de Monitoramento PPT",
+      page_location: window.location.href
+    });
+
+    // Inicializa Firestore
+    const db = getFirestore(app);
+
+    // Disponibiliza globalmente para uso em outros scripts
+    window.firebaseApp = app;
+    window.firebaseDb  = db;
+    window.firebaseAnalytics = analytics;
+
+    console.log("✅ Firebase inicializado — Projeto: base-monitoramento-ppt");
+  </script>
+
   <!-- ===== ESTILOS DE IMPRESSÃO (PAISAGEM / LANDSCAPE) ===== -->
   <style media="print">
     @page {
