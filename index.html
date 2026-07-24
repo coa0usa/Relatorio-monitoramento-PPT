@@ -1833,10 +1833,23 @@
             if (typeof renderizarTabelaArea === 'function') renderizarTabelaArea();
             console.log(`[Firebase] ${dadosArea.length} registros carregados de 'area_trabalhada'.`);
           }
+        });
+
+        // Carrega Horas Operacionais
+        window.fbCarregarColecao('horas_operacionais').then(registros => {
+          if (registros && registros.length > 0) {
+            dadosHoras = registros;
+            localStorage.setItem('dadosHorasOperacionais', JSON.stringify(dadosHoras));
+            dadosHorasFiltrados = [...dadosHoras];
+            if (typeof popularFiltroTabelaProcessoHoras === 'function') popularFiltroTabelaProcessoHoras();
+            if (typeof renderizarTabelaHoras === 'function') renderizarTabelaHoras();
+            console.log(`[Firebase] ${dadosHoras.length} registros carregados de 'horas_operacionais'.`);
+          }
         }).finally(() => {
           atualizarBadgeFirebase('ok');
         });
       }
+
 
       // Aguarda Firebase estar pronto ou tenta imediatamente
       if (window._firebaseReady) {
@@ -3550,16 +3563,20 @@
           popularFiltros();
           renderizarTabela();
           atualizarStats();
-          mostrarToast(`✅ ${novos.length} registro(s) importado(s)! Salvando no Firebase...`);
-
-          // Sincroniza com Firestore
-          sincronizarMonitoramentoFirestore(novos).then(n => {
-            if (n) mostrarToast(`🔥 ${n} registros salvos no Firestore!`);
-          });
+          mostrarToast(`✅ ${novos.length} registro(s) importado(s) com sucesso!`);
 
         } catch (err) {
           console.error(err);
           mostrarToast("❌ Erro ao ler o arquivo Excel.");
+          return; // Encerra sem tentar sincronizar
+        }
+
+        // Sincroniza com Firestore FORA do try/catch (não bloqueia o fluxo principal)
+        if (typeof sincronizarMonitoramentoFirestore === 'function') {
+          mostrarToast("🔄 Salvando no Firebase...");
+          sincronizarMonitoramentoFirestore(dados.slice(-novos.length))
+            .then(n => { if (n) mostrarToast(`🔥 ${n} registros salvos no Firebase!`); })
+            .catch(e => { console.warn("[Firebase] Falha ao sincronizar:", e); });
         }
 
         // Limpa o input para permitir reimportar o mesmo arquivo
@@ -3567,6 +3584,7 @@
       };
       reader.readAsArrayBuffer(arquivo);
     }
+
 
 
     /* ──────────────────────────────────────────────
@@ -4181,15 +4199,20 @@
           salvarDadosArea();
           popularFiltroTabelaProcessoArea();
           renderizarTabelaArea();
-          mostrarToast(`${novosRegistros.length} registros importados! Salvando no Firebase...`);
+          mostrarToast(`${novosRegistros.length} registros de Área importados!`);
 
-          // Sincroniza com Firestore
-          sincronizarAreaFirestore(novosRegistros).then(n => {
-            if (n) mostrarToast(`🔥 ${n} registros Área Trabalhada salvos no Firestore!`);
-          });
         } catch (err) {
           console.error(err);
           mostrarToast("Erro ao processar o arquivo Excel.");
+          return;
+        }
+
+        // Sincroniza com Firestore FORA do try/catch
+        if (typeof sincronizarAreaFirestore === 'function') {
+          mostrarToast("🔄 Salvando no Firebase...");
+          sincronizarAreaFirestore(dadosArea.slice(-novosRegistros.length))
+            .then(n => { if (n) mostrarToast(`🔥 ${n} registros Área salvos no Firebase!`); })
+            .catch(e => { console.warn("[Firebase] Falha:", e); });
         }
       };
       reader.readAsBinaryString(file);
@@ -4245,6 +4268,18 @@
     function salvarDadosHoras() {
       localStorage.setItem("dadosHorasOperacionais", JSON.stringify(dadosHoras));
     }
+
+    async function sincronizarHorasFirestore(novosRegistros) {
+      if (typeof window.fbSalvarEmLote !== 'function') return;
+      try {
+        const n = await window.fbSalvarEmLote('horas_operacionais', novosRegistros);
+        console.log(`[Firebase] ${n} registros salvos em 'horas_operacionais'.`);
+        return n;
+      } catch (err) {
+        console.warn('[Firebase] Erro ao sincronizar Horas Operacionais:', err);
+      }
+    }
+
 
     function processarExcelHoras(event) {
       const file = event.target.files[0];
@@ -4311,15 +4346,25 @@
           salvarDadosHoras();
           popularFiltroTabelaProcessoHoras();
           renderizarTabelaHoras();
-          mostrarToast(`${novosRegistros.length} registros importados para Horas Operacionais.`);
+          mostrarToast(`${novosRegistros.length} registros de Horas importados!`);
         } catch (err) {
           console.error(err);
           mostrarToast("Erro ao processar o arquivo Excel.");
+          return;
+        }
+
+        // Sincroniza com Firestore
+        if (typeof sincronizarHorasFirestore === 'function' && novosRegistros.length > 0) {
+          mostrarToast("🔄 Salvando Horas no Firebase...");
+          sincronizarHorasFirestore(novosRegistros)
+            .then(n => { if (n) mostrarToast(`🔥 ${n} registros de Horas salvos no Firebase!`); })
+            .catch(e => { console.warn("[Firebase] Falha Horas:", e); });
         }
       };
       reader.readAsBinaryString(file);
       event.target.value = "";
     }
+
 
     function popularFiltroTabelaProcessoHoras() {
       const sel = document.getElementById("filterTabelaProcessoHoras");
@@ -5124,6 +5169,8 @@
       if (!file) return;
       const reader = new FileReader();
       reader.onload = function (e) {
+        let novosRtk = []; // declarado FORA do try para ficar acessível depois
+
         try {
           const wb = XLSX.read(e.target.result, { type: "binary" });
           const ws = wb.Sheets[wb.SheetNames[0]];
@@ -5148,19 +5195,19 @@
           const cabecalho = rows[headerRowIndex].map(c => String(c).trim());
           const idx = str => cabecalho.findIndex(h => h.toLowerCase().includes(str.toLowerCase()));
 
-          const iCorp = idx("corp");
-          const iUnid = idx("unid");
-          const iTipo = cabecalho.findIndex(h => h.toLowerCase().includes("tipo"));
-          const iCodFaz = cabecalho.findIndex(h => (h.toLowerCase().includes("cód") || h.toLowerCase().includes("cod")) && h.toLowerCase().includes("faz"));
-          const iFaz = cabecalho.findIndex((h, i) => h.toLowerCase().includes("fazenda") && i !== iCodFaz);
-          const iFrente = idx("frent");
-          let iEquip = cabecalho.findIndex((h, i) => (h.toLowerCase().includes("equip") || h.toLowerCase().includes("frota")) && i !== iTipo);
+          const iCorp      = idx("corp");
+          const iUnid      = idx("unid");
+          const iTipo      = cabecalho.findIndex(h => h.toLowerCase().includes("tipo"));
+          const iCodFaz    = cabecalho.findIndex(h => (h.toLowerCase().includes("cód") || h.toLowerCase().includes("cod")) && h.toLowerCase().includes("faz"));
+          const iFaz       = cabecalho.findIndex((h, i) => h.toLowerCase().includes("fazenda") && i !== iCodFaz);
+          const iFrente    = idx("frent");
+          let   iEquip     = cabecalho.findIndex((h, i) => (h.toLowerCase().includes("equip") || h.toLowerCase().includes("frota")) && i !== iTipo);
           if (iEquip === -1) iEquip = idx("equip");
-          const iOperador = idx("operador") !== -1 ? idx("operador") : idx("op");
-          const iTempo = cabecalho.findIndex(h => h.toLowerCase().includes("tempo") || (h.toLowerCase().includes("efetivo") && !h.toLowerCase().includes("rtk")));
-          const iPctRtk = cabecalho.findIndex(h => h.toLowerCase().includes("%") || h.toLowerCase().includes("pct") || (h.toLowerCase().includes("rtk") && h.toLowerCase().includes("efetivo") && !h.toLowerCase().includes("ligado")));
+          const iOperador  = idx("operador") !== -1 ? idx("operador") : idx("op");
+          const iTempo     = cabecalho.findIndex(h => h.toLowerCase().includes("tempo") || (h.toLowerCase().includes("efetivo") && !h.toLowerCase().includes("rtk")));
+          const iPctRtk    = cabecalho.findIndex(h => h.toLowerCase().includes("%") || h.toLowerCase().includes("pct") || (h.toLowerCase().includes("rtk") && h.toLowerCase().includes("efetivo") && !h.toLowerCase().includes("ligado")));
           const iRtkLigado = cabecalho.findIndex(h => h.toLowerCase().includes("ligado") || (h.toLowerCase().includes("rtk") && h.toLowerCase().includes("h")));
-          const iData = idx("data") !== -1 ? idx("data") : idx("mes");
+          const iData      = idx("data") !== -1 ? idx("data") : idx("mes");
 
           const safeGet = (row, index, def = "") => (index >= 0 && index < row.length) ? String(row[index] ?? "").trim() : def;
 
@@ -5172,14 +5219,13 @@
             return isNaN(num) ? 0 : num;
           };
 
-          const novos = [];
           for (let i = headerRowIndex + 1; i < rows.length; i++) {
             const r = rows[i];
             if (r.every(c => c === "" || c === null || c === undefined)) continue;
 
             const tEfetivo = parseNum(r[iTempo]);
-            let pctRtk = parseNum(r[iPctRtk]);
-            let rtkLigado = parseNum(r[iRtkLigado]);
+            let pctRtk     = parseNum(r[iPctRtk]);
+            let rtkLigado  = parseNum(r[iRtkLigado]);
 
             if (pctRtk <= 1 && pctRtk > 0) pctRtk = pctRtk * 100;
             if (rtkLigado === 0 && tEfetivo > 0 && pctRtk > 0) {
@@ -5189,43 +5235,49 @@
               pctRtk = (rtkLigado / tEfetivo) * 100;
             }
 
-            novos.push({
-              corporativo: safeGet(r, iCorp, "USINA SANTA ADÉLIA"),
-              unidade: safeGet(r, iUnid, ""),
-              tipo_equipamento: safeGet(r, iTipo, ""),
-              cod_fazenda: safeGet(r, iCodFaz, ""),
-              fazenda: safeGet(r, iFaz, ""),
-              frente: safeGet(r, iFrente, ""),
-              equipamento: safeGet(r, iEquip, ""),
-              operador: safeGet(r, iOperador, ""),
-              tempo_efetivo: tEfetivo,
-              pct_rtk_efetivo: pctRtk,
-              rtk_ligado_efetivo: rtkLigado,
-              data: safeGet(r, iData, "")
+            novosRtk.push({
+              corporativo:       safeGet(r, iCorp, "USINA SANTA ADÉLIA"),
+              unidade:           safeGet(r, iUnid, ""),
+              tipo_equipamento:  safeGet(r, iTipo, ""),
+              cod_fazenda:       safeGet(r, iCodFaz, ""),
+              fazenda:           safeGet(r, iFaz, ""),
+              frente:            safeGet(r, iFrente, ""),
+              equipamento:       safeGet(r, iEquip, ""),
+              operador:          safeGet(r, iOperador, ""),
+              tempo_efetivo:     tEfetivo,
+              pct_rtk_efetivo:   pctRtk,
+              rtk_ligado_efetivo:rtkLigado,
+              data:              safeGet(r, iData, "")
             });
           }
 
-          if (novos.length === 0) { mostrarToast("Nenhum registro válido encontrado."); return; }
+          if (novosRtk.length === 0) { mostrarToast("Nenhum registro válido encontrado."); return; }
 
-          dadosRtk = [...dadosRtk, ...novos];
+          dadosRtk = [...dadosRtk, ...novosRtk];
           dadosRtkFiltrados = [...dadosRtk];
           salvarDadosRtk();
           popularFiltroTabelaFrenteRtk();
           renderizarTabelaRtk();
-          mostrarToast(`${novos.length} registros importados para RTK! Salvando no Firebase...`);
+          mostrarToast(`✅ ${novosRtk.length} registros RTK importados!`);
 
-          // Sincroniza com Firestore
-          sincronizarRtkFirestore(novos).then(n => {
-            if (n) mostrarToast(`🔥 ${n} registros RTK salvos no Firestore!`);
-          });
         } catch (err) {
-          console.error(err);
-          mostrarToast("Erro ao processar o arquivo Excel.");
+          console.error("[RTK Import] Erro:", err);
+          mostrarToast("❌ Erro ao processar o arquivo Excel RTK.");
+          return;
+        }
+
+        // Sincroniza com Firestore FORA do try/catch (novosRtk acessível aqui)
+        if (typeof sincronizarRtkFirestore === 'function' && novosRtk.length > 0) {
+          mostrarToast("🔄 Salvando RTK no Firebase...");
+          sincronizarRtkFirestore(novosRtk)
+            .then(n => { if (n) mostrarToast(`🔥 ${n} registros RTK salvos no Firebase!`); })
+            .catch(e => { console.warn("[Firebase] Falha RTK:", e); });
         }
       };
       reader.readAsBinaryString(file);
       event.target.value = "";
     }
+
 
     function exportarExcelRtk() {
       if (dadosRtkFiltrados.length === 0) { mostrarToast("Nenhum dado para exportar."); return; }
@@ -5257,118 +5309,94 @@
     }
   </script>
 
-  <!-- ===== FIREBASE SDK ===== -->
-  <script type="module">
-    // Firebase SDK via CDN (modular)
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-    import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js";
-    import {
-      getFirestore,
-      collection,
-      getDocs,
-      addDoc,
-      writeBatch,
-      doc,
-      query,
-      orderBy,
-      serverTimestamp,
-      deleteDoc,
-      limit
-    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+  <!-- ===== FIREBASE SDK (Compat — funciona em file:// e HTTP) ===== -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+  <script>
+    (function() {
+      // Configuração do projeto Firebase
+      const firebaseConfig = {
+        apiKey: "AIzaSyD2XWTFxjX56Le2TXTR-FRg0BI6iLLgGXc",
+        authDomain: "base-monitoramento-ppt.firebaseapp.com",
+        projectId: "base-monitoramento-ppt",
+        storageBucket: "base-monitoramento-ppt.firebasestorage.app",
+        messagingSenderId: "451296266787",
+        appId: "1:451296266787:web:d95c502446702d23e0bf96",
+        measurementId: "G-MS3VRG4LYD"
+      };
 
-    // Configuração do projeto Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyD2XWTFxjX56Le2TXTR-FRg0BI6iLLgGXc",
-      authDomain: "base-monitoramento-ppt.firebaseapp.com",
-      projectId: "base-monitoramento-ppt",
-      storageBucket: "base-monitoramento-ppt.firebasestorage.app",
-      messagingSenderId: "451296266787",
-      appId: "1:451296266787:web:d95c502446702d23e0bf96",
-      measurementId: "G-MS3VRG4LYD"
-    };
+      // Inicializa Firebase
+      const app = firebase.initializeApp(firebaseConfig);
+      const db  = firebase.firestore();
 
-    // Inicializa Firebase
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-    const db = getFirestore(app);
-
-    // Registra visualização de página
-    logEvent(analytics, "page_view", {
-      page_title: "Relatório de Monitoramento PPT",
-      page_location: window.location.href
-    });
-
-    // ── Expõe objetos e funções para o script principal (não-module) ──
-    window.firebaseApp = app;
-    window.firebaseDb  = db;
-    window.firebaseAnalytics = analytics;
-
-    // Referências de coleções
-    window.fbCol = {
-      monitoramento:     () => collection(db, "monitoramento"),
-      rtk_monitoramento: () => collection(db, "rtk_monitoramento"),
-      area_trabalhada:   () => collection(db, "area_trabalhada"),
-      horas_operacionais:() => collection(db, "horas_operacionais")
-    };
-
-    // ── Salvar em lote (batch write) ──────────────────────────────────
-    window.fbSalvarEmLote = async function(nomeColecao, registros) {
-      if (!registros || registros.length === 0) return 0;
-      const colRef = collection(db, nomeColecao);
-      const BATCH_LIMIT = 499; // Firestore permite 500 por batch
-      let total = 0;
-      for (let i = 0; i < registros.length; i += BATCH_LIMIT) {
-        const batch = writeBatch(db);
-        const fatia = registros.slice(i, i + BATCH_LIMIT);
-        fatia.forEach(reg => {
-          const docRef = doc(colRef);
-          const payload = { ...reg };
-          // Remove campos undefined
-          Object.keys(payload).forEach(k => { if (payload[k] === undefined) delete payload[k]; });
-          payload._importado_em = serverTimestamp();
-          batch.set(docRef, payload);
-        });
-        await batch.commit();
-        total += fatia.length;
-      }
-      return total;
-    };
-
-    // ── Carregar coleção completa ─────────────────────────────────────
-    window.fbCarregarColecao = async function(nomeColecao) {
+      // Analytics (ignora erro em file://)
       try {
-        const colRef = collection(db, nomeColecao);
-        const snap = await getDocs(query(colRef, orderBy("_importado_em", "desc"), limit(5000)));
-        return snap.docs.map(d => {
-          const data = d.data();
-          delete data._importado_em; // Remove campo interno
-          return data;
-        });
-      } catch (err) {
-        console.warn(`[Firebase] Erro ao carregar ${nomeColecao}:`, err.message);
-        return null; // Retorna null para indicar falha (usa localStorage como fallback)
-      }
-    };
+        const analytics = firebase.analytics();
+        analytics.logEvent("page_view", { page_title: "Relatório de Monitoramento PPT" });
+      } catch(e) { /* file:// não suporta analytics */ }
 
-    // ── Apagar coleção completa ───────────────────────────────────────
-    window.fbApagarColecao = async function(nomeColecao) {
-      try {
-        const colRef = collection(db, nomeColecao);
-        const snap = await getDocs(colRef);
-        const batch = writeBatch(db);
-        snap.docs.forEach(d => batch.delete(d.ref));
-        await batch.commit();
-        return snap.docs.length;
-      } catch (err) {
-        console.warn(`[Firebase] Erro ao apagar ${nomeColecao}:`, err.message);
-        return 0;
-      }
-    };
+      // Expõe globalmente
+      window.firebaseApp = app;
+      window.firebaseDb  = db;
 
-    // Indica que o Firebase está pronto
-    window._firebaseReady = true;
-    document.dispatchEvent(new CustomEvent("firebaseReady"));
-    console.log("✅ Firebase inicializado — Projeto: base-monitoramento-ppt");
+      // ── Salvar em lote ────────────────────────────────────────────────
+      window.fbSalvarEmLote = async function(nomeColecao, registros) {
+        if (!registros || registros.length === 0) return 0;
+        const BATCH_LIMIT = 499;
+        let total = 0;
+        for (let i = 0; i < registros.length; i += BATCH_LIMIT) {
+          const batch = db.batch();
+          const fatia = registros.slice(i, i + BATCH_LIMIT);
+          fatia.forEach(reg => {
+            const docRef = db.collection(nomeColecao).doc();
+            const payload = { ...reg };
+            Object.keys(payload).forEach(k => { if (payload[k] === undefined) delete payload[k]; });
+            payload._importado_em = firebase.firestore.FieldValue.serverTimestamp();
+            batch.set(docRef, payload);
+          });
+          await batch.commit();
+          total += fatia.length;
+        }
+        return total;
+      };
+
+      // ── Carregar coleção completa ──────────────────────────────────────
+      window.fbCarregarColecao = async function(nomeColecao) {
+        try {
+          const snap = await db.collection(nomeColecao).get();
+          if (snap.empty) return null; // Coleção vazia — mantém localStorage
+          return snap.docs.map(d => {
+            const data = d.data();
+            delete data._importado_em; // Remove campo interno
+            return data;
+          });
+        } catch (err) {
+          console.warn(`[Firebase] Erro ao carregar ${nomeColecao}:`, err.message);
+          return null; // Fallback para localStorage
+        }
+      };
+
+
+      // ── Apagar coleção completa ────────────────────────────────────────
+      window.fbApagarColecao = async function(nomeColecao) {
+        try {
+          const snap = await db.collection(nomeColecao).get();
+          const batch = db.batch();
+          snap.docs.forEach(d => batch.delete(d.ref));
+          await batch.commit();
+          return snap.docs.length;
+        } catch (err) {
+          console.warn(`[Firebase] Erro ao apagar ${nomeColecao}:`, err.message);
+          return 0;
+        }
+      };
+
+      // Sinaliza que o Firebase está pronto
+      window._firebaseReady = true;
+      document.dispatchEvent(new CustomEvent("firebaseReady"));
+      console.log("✅ Firebase Compat inicializado — Projeto: base-monitoramento-ppt");
+    })();
   </script>
 
 
