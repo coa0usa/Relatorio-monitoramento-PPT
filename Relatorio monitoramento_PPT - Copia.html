@@ -1065,6 +1065,27 @@
     </div>
 
     <div style="display:flex;align-items:center;gap:8px;">
+      <!-- input oculto para leitura do arquivo Excel -->
+      <input type="file" id="fileInputExcel" accept=".xlsx,.xls" style="display:none"
+        onchange="processarArquivoExcel(event)" />
+
+      <button class="btn-top-nav btn-import-excel" id="btnImportExcel"
+        onclick="document.getElementById('fileInputExcel').click()">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+        </svg>
+        Importar Excel
+      </button>
+
+      <button class="btn-top-nav btn-export-excel" id="btnExportExcel" onclick="exportarExcel()">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+        </svg>
+        Exportar Excel
+      </button>
+
       <button class="btn-top-nav btn-export-pdf" id="btnExportPDF" onclick="exportarPDF()">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round"
@@ -1081,6 +1102,14 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
         </svg>
         PrintScreen
+      </button>
+
+      <button class="btn-top-nav btn-limpar" id="btnLimpar" onclick="limparDados()">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+        </svg>
+        Limpar
       </button>
     </div>
   </div>
@@ -1099,16 +1128,13 @@
         📊 Relatórios & Indicadores
       </button>
       <button class="main-tab-btn" id="tab-historico" onclick="switchMainTab('historico')">
-        ⚡ RPM/Velocidade
+        📋 Base Histórica
       </button>
       <button class="main-tab-btn" id="tab-area" onclick="switchMainTab('area')">
         🌱 Área Trabalhada
       </button>
       <button class="main-tab-btn" id="tab-horas" onclick="switchMainTab('horas')">
         ⏳ Horas Operacionais
-      </button>
-      <button class="main-tab-btn" id="tab-rtk" onclick="switchMainTab('rtk')">
-        🛰️ RTK
       </button>
     </div>
 
@@ -1143,14 +1169,6 @@
         </div>
       </header>
 
-      <!-- FILTRO DE DATA — EXCLUSIVO PARA OS 2 GRÁFICOS ABAIXO -->
-      <div id="filtroDataGraficosEquip" style="background:var(--clr-surface); border:1px solid var(--clr-border); border-radius:var(--radius-lg); padding:12px 20px; margin-bottom:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; box-shadow:var(--shadow);">
-        <span style="font-size:0.82rem; font-weight:700; color:var(--clr-text); white-space:nowrap;">📅 Data:</span>
-        <div id="dataSlicerGraficosEquip" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
-          <!-- Botões injetados via JS -->
-        </div>
-      </div>
-
       <!-- GRÁFICOS HORAS EQUIPAMENTOS -->
       <div id="containerRelatorioHorasEquip" style="margin-bottom:24px; display: flex; flex-direction: column; gap: 24px;">
         
@@ -1183,39 +1201,8 @@
       <div id="monthlyChartsContainer"></div>
     </div>
 
-    <!-- Conteúdo da Aba RPM/Velocidade -->
+    <!-- Conteúdo da Aba Base Histórica -->
     <div id="content-historico" class="tab-content sl-hidden">
-      <!-- TOOLBAR EXCLUSIVA DA ABA RPM/VELOCIDADE -->
-      <input type="file" id="fileInputExcel" accept=".xlsx,.xls" style="display:none"
-        onchange="processarArquivoExcel(event)" />
-      <div class="toolbar" style="margin-bottom:16px;">
-        <button class="btn btn-import-excel" id="btnImportExcel"
-          onclick="document.getElementById('fileInputExcel').click()">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-            stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-          </svg>
-          Importar Excel
-        </button>
-        <button class="btn btn-export-excel" id="btnExportExcel" onclick="exportarExcel()">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-            stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-          </svg>
-          Exportar Excel
-        </button>
-        <button class="btn btn-limpar" id="btnLimpar" onclick="limparDados()">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-            stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-          </svg>
-          Limpar
-        </button>
-      </div>
-
       <!-- SEARCH + COUNTER -->
       <div class="search-bar-wrapper">
         <div class="search-input-wrap">
@@ -1234,7 +1221,7 @@
       <div class="table-container">
         <div class="table-header-bar">
           <div class="table-title">
-            ⚡ RPM/Velocidade
+            📋 Dados de Monitoramento
             <span class="badge badge-blue" id="badgeCount">0 registros</span>
           </div>
           <span style="font-size:.75rem; color:var(--clr-muted);">Clique no cabeçalho para ordenar</span>
@@ -1490,112 +1477,6 @@
       </div>
     </div>
 
-    <!-- Conteúdo da Aba RTK -->
-    <div id="content-rtk" class="tab-content sl-hidden">
-      <input type="file" id="fileInputExcelRtk" accept=".xlsx,.xls" style="display:none"
-        onchange="processarExcelRtk(event)" />
-      <div class="toolbar" style="margin-bottom:16px;">
-        <button class="btn btn-import-excel" id="btnImportExcelRtk"
-          onclick="document.getElementById('fileInputExcelRtk').click()">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-            stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-          </svg>
-          Importar Excel
-        </button>
-        <button class="btn btn-export-excel" id="btnExportExcelRtk" onclick="exportarExcelRtk()">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-            stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-          </svg>
-          Exportar Excel
-        </button>
-        <button class="btn btn-limpar" id="btnLimparRtk" onclick="limparDadosRtk()">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-            stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-          </svg>
-          Limpar
-        </button>
-      </div>
-
-      <!-- CARDS DE STATUS / KPI RTK -->
-      <div id="rtkStatusCards" class="area-status-grid" style="margin-bottom:24px;"></div>
-
-      <!-- GRÁFICOS RTK -->
-      <div class="area-charts-row" style="margin-bottom:24px;">
-        <div class="chart-container-card" style="flex:1; min-width:280px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <div class="chart-card-title">🚜 Top Equipamentos (% RTK Efetivo)</div>
-          </div>
-          <canvas id="chartTopEquipRtk" style="max-height:260px;"></canvas>
-        </div>
-        <div class="chart-container-card" style="flex:1; min-width:280px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <div class="chart-card-title">👤 Top Operadores (% RTK Efetivo)</div>
-          </div>
-          <canvas id="chartTopOperadoresRtk" style="max-height:260px;"></canvas>
-        </div>
-      </div>
-
-      <!-- PESQUISA E FILTROS RTK -->
-      <div class="search-bar-wrapper">
-        <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
-          <select id="filterTabelaFrenteRtk" class="filter-select" style="min-width:200px;"
-            onchange="filtrarTabelaRtk()">
-            <option value="todos">Todas as Frentes/Processos</option>
-          </select>
-          <div class="search-input-wrap">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-              stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-            </svg>
-            <input type="text" id="searchInputRtk" placeholder="Pesquisar por frente, fazenda, equipamento, operador…"
-              oninput="filtrarTabelaRtkDebounced()" />
-          </div>
-        </div>
-        <span class="results-count" id="resultsCountRtk"></span>
-      </div>
-
-      <!-- TABELA RTK -->
-      <div class="table-container">
-        <div class="table-header-bar">
-          <div class="table-title">
-            🛰️ Monitoramento RTK
-            <span class="badge badge-blue" id="badgeCountRtk">0 registros</span>
-          </div>
-          <span style="font-size:.75rem; color:var(--clr-muted);">Clique no cabeçalho para ordenar</span>
-        </div>
-        <div class="table-scroll">
-          <table id="tabelaRtk" aria-label="Tabela de Monitoramento RTK">
-            <thead>
-              <tr>
-                <th id="rth-0" onclick="ordenarTabelaRtk(0)">Corporativo</th>
-                <th id="rth-1" onclick="ordenarTabelaRtk(1)">Unidade</th>
-                <th id="rth-2" onclick="ordenarTabelaRtk(2)">Tipo Equipamento</th>
-                <th id="rth-3" onclick="ordenarTabelaRtk(3)">Cód. Fazenda</th>
-                <th id="rth-4" onclick="ordenarTabelaRtk(4)">Fazenda</th>
-                <th id="rth-5" onclick="ordenarTabelaRtk(5)">Frente</th>
-                <th id="rth-6" onclick="ordenarTabelaRtk(6)">Equipamento</th>
-                <th id="rth-7" onclick="ordenarTabelaRtk(7)">Operador</th>
-                <th id="rth-8" onclick="ordenarTabelaRtk(8)">Tempo Efetivo (h)</th>
-                <th id="rth-9" onclick="ordenarTabelaRtk(9)">% RTK Efetivo</th>
-                <th id="rth-10" onclick="ordenarTabelaRtk(10)">RTK Ligado Efetivo (h)</th>
-                <th id="rth-11" onclick="ordenarTabelaRtk(11)">Data</th>
-              </tr>
-            </thead>
-            <tbody id="tableBodyRtk">
-              <!-- Dados gerados pelo JS -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
   </main>
 
   <!-- ===== FOOTER ===== -->
@@ -1722,21 +1603,9 @@
       }
     }
 
-    // Salva dados no localStorage (sempre) e sincroniza com Firestore (se disponível)
+    // Função auxiliar para salvar dados no localStorage
     function salvarDados() {
       localStorage.setItem('dadosMonitoramentoPPT', JSON.stringify(dados));
-    }
-
-    // Sincroniza array 'dados' com a coleção Firestore 'monitoramento'
-    async function sincronizarMonitoramentoFirestore(novosRegistros) {
-      if (typeof window.fbSalvarEmLote !== 'function') return;
-      try {
-        const n = await window.fbSalvarEmLote('monitoramento', novosRegistros);
-        console.log(`[Firebase] ${n} registros salvos em 'monitoramento'.`);
-        return n;
-      } catch (err) {
-        console.warn('[Firebase] Erro ao sincronizar monitoramento:', err);
-      }
     }
 
     /* ──────────────────────────────────────────────
@@ -1792,84 +1661,7 @@
       popularFiltros();
       renderizarTabela();
       atualizarStats();
-
-      // Carrega dados do Firestore quando estiver pronto
-      function carregarDoFirestore() {
-        if (typeof window.fbCarregarColecao !== 'function') return;
-        atualizarBadgeFirebase('sync');
-
-        // Carrega monitoramento principal
-        window.fbCarregarColecao('monitoramento').then(registros => {
-          if (registros && registros.length > 0) {
-            dados = registros;
-            localStorage.setItem('dadosMonitoramentoPPT', JSON.stringify(dados));
-            dadosFiltrados = dados.filter(d => (d.velocidadeMedia ?? 0) >= VEL_MIN);
-            popularFiltros();
-            renderizarTabela();
-            atualizarStats();
-            console.log(`[Firebase] ${dados.length} registros carregados de 'monitoramento'.`);
-          }
-        });
-
-        // Carrega RTK
-        window.fbCarregarColecao('rtk_monitoramento').then(registros => {
-          if (registros && registros.length > 0) {
-            dadosRtk = registros;
-            localStorage.setItem('dadosMonitoramentoRtkPPT', JSON.stringify(dadosRtk));
-            dadosRtkFiltrados = [...dadosRtk];
-            popularFiltroTabelaFrenteRtk();
-            renderizarTabelaRtk();
-            console.log(`[Firebase] ${dadosRtk.length} registros carregados de 'rtk_monitoramento'.`);
-          }
-        });
-
-        // Carrega Área Trabalhada
-        window.fbCarregarColecao('area_trabalhada').then(registros => {
-          if (registros && registros.length > 0) {
-            dadosArea = registros;
-            localStorage.setItem('dadosAreaTrabalhada', JSON.stringify(dadosArea));
-            dadosAreaFiltrados = [...dadosArea];
-            if (typeof popularFiltroTabelaProcessoArea === 'function') popularFiltroTabelaProcessoArea();
-            if (typeof renderizarTabelaArea === 'function') renderizarTabelaArea();
-            console.log(`[Firebase] ${dadosArea.length} registros carregados de 'area_trabalhada'.`);
-          }
-        }).finally(() => {
-          atualizarBadgeFirebase('ok');
-        });
-      }
-
-      // Aguarda Firebase estar pronto ou tenta imediatamente
-      if (window._firebaseReady) {
-        carregarDoFirestore();
-      } else {
-        document.addEventListener('firebaseReady', carregarDoFirestore, { once: true });
-        // Timeout de segurança (3s): se Firebase não responder, usa localStorage
-        setTimeout(() => {
-          if (!window._firebaseReady) atualizarBadgeFirebase('offline');
-        }, 3000);
-      }
     });
-
-    /* ── Badge de status Firebase no header ── */
-    function atualizarBadgeFirebase(estado) {
-      let badge = document.getElementById('fb-status-badge');
-      if (!badge) {
-        badge = document.createElement('span');
-        badge.id = 'fb-status-badge';
-        badge.style.cssText = 'display:inline-flex;align-items:center;gap:5px;font-size:0.72rem;font-weight:600;padding:4px 10px;border-radius:20px;transition:all 0.3s;';
-        const toolbar = document.querySelector('.toolbar');
-        if (toolbar) toolbar.appendChild(badge);
-      }
-      const cfg = {
-        sync:    { bg:'#dbeafe', color:'#1d4ed8', icon:'🔄', txt:'Sincronizando...' },
-        ok:      { bg:'#dcfce7', color:'#15803d', icon:'🔥', txt:'Firebase Online' },
-        offline: { bg:'#fef3c7', color:'#92400e', icon:'📴', txt:'Modo Offline' }
-      }[estado] || { bg:'#f1f5f9', color:'#64748b', icon:'⚙️', txt:'Firebase' };
-      badge.style.background = cfg.bg;
-      badge.style.color = cfg.color;
-      badge.style.border = `1px solid ${cfg.color}33`;
-      badge.innerHTML = `${cfg.icon} ${cfg.txt}`;
-    }
 
     /* ──────────────────────────────────────────────
        RENDERIZAR TABELA
@@ -2018,99 +1810,6 @@
       return str;
     }
 
-    function parseNum(val) {
-      if (val === null || val === undefined || val === "") return 0;
-      if (typeof val === "number") return isNaN(val) ? 0 : val;
-      let str = String(val).trim().replace("%", "").replace(/\s/g, "").replace(",", ".");
-      const num = parseFloat(str);
-      return isNaN(num) ? 0 : num;
-    }
-
-    function normEquip(eq) {
-      if (!eq) return "";
-      return String(eq).replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-    }
-
-    function matchRtkItemComOperacao(d, proc) {
-      if (!proc) return false;
-
-      const procNorm = normalizeText(proc);
-
-      const pRaw = d.processo || d.operacao || "";
-      const fRaw = d.frente || "";
-      const tRaw = d.tipo_equipamento || "";
-
-      const pNorm = normalizeText(pRaw);
-      const fNorm = normalizeText(fRaw);
-      const tNorm = normalizeText(tRaw);
-
-      if (pRaw === proc || fRaw === proc || tRaw === proc) return true;
-      if (pNorm === procNorm || fNorm === procNorm || tNorm === procNorm) return true;
-      if (pNorm && (pNorm.includes(procNorm) || procNorm.includes(pNorm))) return true;
-      if (fNorm && (fNorm.includes(procNorm) || procNorm.includes(fNorm))) return true;
-      if (tNorm && (tNorm.includes(procNorm) || procNorm.includes(tNorm))) return true;
-
-      // Equivalência por palavras-chave (ENLEIRA P TALHAO <-> ENLEIRAR PALHA <-> DESENLEIRADOR)
-      if ((procNorm.includes("ENLEIR") || procNorm.includes("ENREIL")) &&
-          (pNorm.includes("ENLEIR") || pNorm.includes("ENREIL") || fNorm.includes("ENLEIR") || fNorm.includes("ENREIL") || tNorm.includes("ENLEIR") || tNorm.includes("ENREIL"))) {
-        return true;
-      }
-      if ((procNorm.includes("PREPARO") || procNorm.includes("SOLO")) &&
-          (pNorm.includes("PREPARO") || fNorm.includes("PREPARO") || tNorm.includes("TRATOR"))) {
-        return true;
-      }
-      if ((procNorm.includes("COLHEITA") || procNorm.includes("CORTE")) &&
-          (pNorm.includes("COLHEITA") || fNorm.includes("COLHEITA") || tNorm.includes("COLHEDORA"))) {
-        return true;
-      }
-      if ((procNorm.includes("PULVERIZ") || procNorm.includes("HERB")) &&
-          (pNorm.includes("PULVERIZ") || fNorm.includes("PULVERIZ") || tNorm.includes("PULVERIZ"))) {
-        return true;
-      }
-      if (procNorm.includes("PLANTIO") &&
-          (pNorm.includes("PLANTIO") || fNorm.includes("PLANTIO") || tNorm.includes("PLANTADEIRA"))) {
-        return true;
-      }
-
-      // Cruzamento via ID de Equipamento (mapaEquipFrente)
-      const eqRaw = d.equipamento || "";
-      if (eqRaw && window.mapaEquipFrente) {
-        const eqClean = String(eqRaw).trim();
-        const eqNormStr = normEquip(eqRaw);
-        // Tenta múltiplas chaves: string limpa, normalizada e apenas números
-        const eqProc = window.mapaEquipFrente[eqClean]
-                    || window.mapaEquipFrente[eqNormStr]
-                    || window.mapaEquipFrente[String(parseInt(eqClean, 10))]
-                    || null;
-        if (eqProc) {
-          const eqProcNorm = normalizeText(eqProc);
-          if (eqProc === proc || eqProcNorm === procNorm || eqProcNorm.includes(procNorm) || procNorm.includes(eqProcNorm)) {
-            return true;
-          }
-          if ((procNorm.includes("ENLEIR") || procNorm.includes("ENREIL")) && (eqProcNorm.includes("ENLEIR") || eqProcNorm.includes("ENREIL"))) {
-            return true;
-          }
-          if (procNorm.includes("ELIM") && eqProcNorm.includes("ELIM")) return true;
-          if (procNorm.includes("SOQUEIR") && eqProcNorm.includes("SOQUEIR")) return true;
-        }
-      }
-
-      // Equivalência adicional: ELIMINAR SOQUEIRA
-      if (procNorm.includes("ELIM") || procNorm.includes("SOQUEIR")) {
-        if (pNorm.includes("ELIM") || pNorm.includes("SOQUEIR") ||
-            fNorm.includes("ELIM") || fNorm.includes("SOQUEIR") ||
-            tNorm.includes("ELIM") || tNorm.includes("SOQUEIR")) {
-          return true;
-        }
-      }
-
-      return false;
-    }
-
-
-
-
-
     /* ──────────────────────────────────────────────
        VARIAVEIS DE FILTRO ADICIONAIS
     ────────────────────────────────────────────── */
@@ -2251,11 +1950,9 @@
       dados.forEach(x => {
         const eqNorm = normalizeText(x.equipamento);
         const m = x.mes || "(sem mês)";
-        const p = x.processo || x.frente;
-        if (eqNorm && p) {
-          mapaEquipMesFrente[`${eqNorm}|${m}`] = p;
-          mapaEquipFrente[eqNorm] = p;
-          mapaEquipFrente[String(x.equipamento).trim()] = p;
+        if (eqNorm && x.frente) {
+          mapaEquipMesFrente[`${eqNorm}|${m}`] = x.frente;
+          mapaEquipFrente[eqNorm] = x.frente;
         }
         if (eqNorm && x.modelo) {
           mapaEquipModelo[eqNorm] = x.modelo;
@@ -2264,25 +1961,6 @@
           mapaProcessoNormalizado[normalizeText(x.processo)] = x.processo;
         }
       });
-
-      // Enriquece o mapaEquipFrente com dados da aba Área Trabalhada
-      // Garante que equipamentos como 210418/210378 (que podem não existir no histórico RPM)
-      // sejam associados à sua frente correta para o cruzamento RTK
-      dadosArea.forEach(x => {
-        const eqRaw = String(x.equipamento || "").trim();
-        if (!eqRaw) return;
-        const eqNorm = normalizeText(eqRaw);
-        const p = x.processo || x.operacao || "";
-        if (p) {
-          // Só preenche se ainda não existe (histórico RPM tem prioridade)
-          if (!mapaEquipFrente[eqNorm]) mapaEquipFrente[eqNorm] = p;
-          if (!mapaEquipFrente[eqRaw]) mapaEquipFrente[eqRaw] = p;
-        }
-        if (x.processo) {
-          mapaProcessoNormalizado[normalizeText(x.processo)] = x.processo;
-        }
-      });
-
 
       window.getMesNomeArea = getMesNomeArea;
       window.normalizeText = normalizeText;
@@ -2325,21 +2003,7 @@
         let matchFrente = true;
         const mesNome = getMesNomeArea(d.data) || d.mes || "(sem mês)";
         if (typeof frentesSelecionadas !== 'undefined' && frentesSelecionadas.length > 0) {
-          matchFrente = false;
-          const procRaw = d.processo || d.operacao || "";
-          const procNorm = normalizeText(procRaw);
-          for (let proc of frentesSelecionadas) {
-            const pNorm = normalizeText(proc);
-            if (procRaw === proc || procNorm === pNorm || procNorm.includes(pNorm) || pNorm.includes(procNorm) || frentesSelecionadas.includes(procRaw)) {
-              matchFrente = true;
-              break;
-            }
-            if ((pNorm.includes("IRRIG") || pNorm.includes("LINHA MAE") || pNorm.includes("PL99") || pNorm.includes("BOMBEIR")) &&
-                (procNorm.includes("IRRIG") || procNorm.includes("LINHA MAE") || procNorm.includes("PL99") || procNorm.includes("BOMBEIR"))) {
-              matchFrente = true;
-              break;
-            }
-          }
+          matchFrente = frentesSelecionadas.includes(d.processo || d.operacao);
         }
         let matchMesSel = true;
         if (mesSel !== "todos") {
@@ -2348,21 +2012,11 @@
         return matchFrente && matchMesSel;
       });
 
-      const dadosRtkFiltradosStats = (typeof dadosRtk !== "undefined" ? dadosRtk : []).filter(d => {
-        let matchFrente = true;
-        const mesNome = getMesNomeArea(d.data) || d.data || "(sem mês)";
-        if (typeof frentesSelecionadas !== 'undefined' && frentesSelecionadas.length > 0) {
-          matchFrente = frentesSelecionadas.some(proc => matchRtkItemComOperacao(d, proc));
-        }
-        let matchMesSel = true;
-        if (mesSel !== "todos") {
-          matchMesSel = (mesNome === mesSel) || (d.data === mesSel) || (String(d.data).includes(mesSel));
-        }
-        return matchFrente && matchMesSel;
-      });
+      const total = dadosFiltradosStats.length;
 
-      if (!dadosFiltradosStats.length && !dadosAreaFiltradosStats.length && !dadosRtkFiltradosStats.length) {
-        renderizarGraficos([], [], []);
+      if (!total) {
+        // UI update for cards removed
+        renderizarGraficos([]);
         return;
       }
 
@@ -2458,7 +2112,7 @@
 
 
       // Renderiza os gráficos por processo
-      renderizarGraficos(dadosFiltradosStats, dadosAreaFiltradosStats, dadosRtkFiltradosStats);
+      renderizarGraficos(dadosFiltradosStats, dadosAreaFiltradosStats);
     }
 
     let chartInstances = {
@@ -2468,44 +2122,6 @@
       consumo: null
     };
     let relOfensoresInstances = [];
-
-    /* ── FILTRO DE DATA EXCLUSIVO PARA OS GRÁFICOS DE EQUIPAMENTO ── */
-    let dataGraficosEquipSelecionada = "todas";
-
-
-    function popularFiltroDataGraficosEquip() {
-      const container = document.getElementById("dataSlicerGraficosEquip");
-      if (!container) return;
-
-      const datasUnicas = [...new Set(
-        (typeof dadosHoras !== "undefined" ? dadosHoras : []).map(function(d) {
-          const raw = d.data || "";
-          return formatarDataArea(raw) || raw;
-        }).filter(Boolean)
-      )];
-      const datasOrdenadas = datasUnicas.sort(function(a, b) {
-        const parseD = function(s) {
-          const p = String(s).split('/');
-          return p.length === 3 ? new Date(p[2], p[1]-1, p[0]) : new Date(0);
-        };
-        return parseD(a) - parseD(b);
-      });
-
-      const classeTodas = dataGraficosEquipSelecionada === "todas" ? "active" : "";
-      let htmlBtns = '<button class="slicer-btn ' + classeTodas + '" onclick="onDataGraficosEquipToggle(\'todas\')">Todas</button>';
-      for (let i = 0; i < datasOrdenadas.length; i++) {
-        const dv = datasOrdenadas[i];
-        const classeD = dataGraficosEquipSelecionada === dv ? "active" : "";
-        htmlBtns += '<button class="slicer-btn ' + classeD + '" onclick="onDataGraficosEquipToggle(\''+dv+'\')">' + dv + '</button>';
-      }
-      container.innerHTML = htmlBtns;
-    }
-
-    function onDataGraficosEquipToggle(val) {
-      dataGraficosEquipSelecionada = val;
-      popularFiltroDataGraficosEquip();
-      if (typeof atualizarStats === "function") atualizarStats();
-    }
 
     // Nota: Chart.register(ChartDataLabels) foi movido para dentro do DOMContentLoaded
 
@@ -2652,7 +2268,7 @@
       });
     }
 
-    function renderizarGraficos(dadosList, dadosAreaList = [], dadosRtkList = []) {
+    function renderizarGraficos(dadosList, dadosAreaList = []) {
       // Destrói os gráficos existentes para evitar conflitos de canvas
       Object.keys(chartInstances).forEach(k => {
         if (chartInstances[k]) {
@@ -2669,7 +2285,7 @@
       });
       relOfensoresInstances = [];
 
-      if (dadosList.length === 0 && dadosAreaList.length === 0 && dadosRtkList.length === 0) {
+      if (dadosList.length === 0 && dadosAreaList.length === 0) {
         const mc = document.getElementById("monthlyChartsContainer");
         if (mc) mc.innerHTML = "";
         return;
@@ -2736,16 +2352,9 @@
       if (containerHorasEquip && typeof dadosHoras !== "undefined" && dadosHoras.length > 0) {
         containerHorasEquip.classList.remove("sl-hidden");
 
-        // Popula e mostra o filtro de data exclusivo
-        const filtroDataEl = document.getElementById("filtroDataGraficosEquip");
-        if (filtroDataEl) {
-          filtroDataEl.style.display = "flex";
-          popularFiltroDataGraficosEquip();
-        }
-
         const mesSelLocal = mesSelecionado;
 
-        // Filtra dadosHoras baseado na frenteSelecionada, mesSel e dataGraficosEquipSelecionada
+        // Filtra dadosHoras baseado na frenteSelecionada e mesSel
         const baseHoras = dadosHoras.filter(d => {
           let matchFrente = false;
           if (frentesSelecionadas.length === 0) {
@@ -2783,14 +2392,7 @@
             const dMes = window.getMesNomeArea ? window.getMesNomeArea(d.data) : "(sem mês)";
             matchMes = (dMes === mesSelLocal) || (String(d.data).includes(mesSelLocal));
           }
-          // Filtro de data exclusivo dos gráficos de equipamento
-          let matchDataEquip = true;
-          if (dataGraficosEquipSelecionada !== "todas") {
-            const dataFormatada = formatarDataArea(d.data) || String(d.data || "");
-            matchDataEquip = (dataFormatada === dataGraficosEquipSelecionada) ||
-                             (String(d.data || "") === dataGraficosEquipSelecionada);
-          }
-          return matchFrente && matchMes && matchDataEquip;
+          return matchFrente && matchMes;
         });
 
         const somaSemApontamentoEquip = {};
@@ -2969,9 +2571,6 @@
         }
       } else if (containerHorasEquip) {
         containerHorasEquip.classList.add("sl-hidden");
-        // Oculta o filtro de data se não há dados
-        const filtroDataEl2 = document.getElementById("filtroDataGraficosEquip");
-        if (filtroDataEl2) filtroDataEl2.style.display = "none";
       }
 
       // ====== Gráficos Diários ======
@@ -3014,43 +2613,9 @@
           if (chaveHistorico) procsSet.add(chaveHistorico);
         });
       }
-
-      if (dadosRtkList) {
-        dadosRtkList.forEach(d => {
-          const opRaw = d.frente || d.tipo_equipamento || "";
-          const mesNome = formatarDataArea(d.data) || d.data;
-          if (mesNome) mesesSet.add(mesNome);
-
-          const procNormalizado = window.normalizeText ? window.normalizeText(opRaw) : opRaw.toUpperCase().trim();
-          const chaveHistorico = window.mapaProcessoNormalizado ? (window.mapaProcessoNormalizado[procNormalizado] || opRaw) : opRaw;
-
-          if (chaveHistorico) procsSet.add(chaveHistorico);
-        });
-      }
-
-      function getAreaTotalOperacao(proc) {
-        if (!dadosAreaList || dadosAreaList.length === 0) return 0;
-        const procChartNormalizado = window.normalizeText ? window.normalizeText(proc) : proc.toUpperCase().trim();
-        const dAreaProc = dadosAreaList.filter(d => {
-          const opRaw = d.operacao || d.processo || "";
-          const procNormalizado = window.normalizeText ? window.normalizeText(opRaw) : opRaw.toUpperCase().trim();
-          const matchProc = (procNormalizado === procChartNormalizado) || (opRaw === proc);
-
-          let matchMesSel = true;
-          if (mesSelecionado !== "todos") {
-            const mesNomeArea = formatarDataArea(d.data);
-            matchMesSel = (mesNomeArea === mesSelecionado) || (d.mes === mesSelecionado) || (String(d.data).includes(mesSelecionado));
-          }
-
-          return matchProc && matchMesSel;
-        });
-
-        return dAreaProc.reduce((s, d) => s + (parseNum(d.qtd) || 0), 0);
-      }
-
       let labelsMeses = [...mesesSet];
       labelsMeses = sortMeses(labelsMeses);
-      const processosTotais = [...procsSet].filter(proc => getAreaTotalOperacao(proc) > 0).sort();
+      const processosTotais = [...procsSet].sort();
 
       const containerBtns = document.getElementById("buttonsOperacaoMensal");
       if (containerBtns) {
@@ -3065,7 +2630,6 @@
       const processos = processosTotais.filter(proc => !window.operacoesMensaisOcultas.includes(proc));
 
       processos.forEach((proc, idxProc) => {
-        if (getAreaTotalOperacao(proc) <= 0) return;
         const procContainer = document.createElement("div");
         procContainer.style.marginBottom = "32px";
 
@@ -3087,11 +2651,10 @@
 
         const metricas = [
           { id: "Area", titulo: "📐 Área Trabalhada (Qtd)", campo: "qtd", tipo: "area_especial", corFundo: "rgba(236, 72, 153, 0.75)", corBorda: "rgba(236, 72, 153, 1)", sufixo: "", dec: 2 },
-          { id: "Motor", titulo: "📅 Motor Ligado (h)", campo: "motorLigado", tipo: "soma", corFundo: "rgba(34, 197, 94, 0.75)", corBorda: "rgba(34, 197, 94, 1)", sufixo: " h", dec: 1 },
-          { id: "RPM", titulo: "📅 RPM Médio", campo: "rpmMedio", tipo: "ponderada", corFundo: "rgba(2, 132, 199, 0.75)", corBorda: "rgba(2, 132, 199, 1)", sufixo: "", dec: 0 },
-          { id: "Vel", titulo: "📅 Vel. Média (km/h)", campo: "velocidadeMedia", tipo: "ponderada", corFundo: "rgba(245, 158, 11, 0.75)", corBorda: "rgba(245, 158, 11, 1)", sufixo: " km/h", dec: 1 },
-          { id: "Consumo", titulo: "📅 Consumo Médio (l/h)", campo: "consumoMedio", tipo: "ponderada", corFundo: "rgba(124, 58, 237, 0.75)", corBorda: "rgba(124, 58, 237, 1)", sufixo: " l/h", dec: 1 },
-          { id: "RtkPct", titulo: "🛰️ % RTK Efetivo (%)", campo: "pct_rtk_efetivo", tipo: "rtk_pct_especial", corFundo: "rgba(16, 185, 129, 0.75)", corBorda: "rgba(16, 185, 129, 1)", sufixo: "%", dec: 1 }
+          { id: "Motor", titulo: "📅 Motor Ligado por Dia (h)", campo: "motorLigado", tipo: "soma", corFundo: "rgba(34, 197, 94, 0.75)", corBorda: "rgba(34, 197, 94, 1)", sufixo: " h", dec: 1 },
+          { id: "RPM", titulo: "📅 RPM Médio por Dia", campo: "rpmMedio", tipo: "ponderada", corFundo: "rgba(2, 132, 199, 0.75)", corBorda: "rgba(2, 132, 199, 1)", sufixo: "", dec: 0 },
+          { id: "Vel", titulo: "📅 Vel. Média por Dia (km/h)", campo: "velocidadeMedia", tipo: "ponderada", corFundo: "rgba(245, 158, 11, 0.75)", corBorda: "rgba(245, 158, 11, 1)", sufixo: " km/h", dec: 1 },
+          { id: "Consumo", titulo: "📅 Consumo Médio por Dia (l/h)", campo: "consumoMedio", tipo: "ponderada", corFundo: "rgba(124, 58, 237, 0.75)", corBorda: "rgba(124, 58, 237, 1)", sufixo: " l/h", dec: 1 }
         ];
 
         const dadosProc = dadosBase.filter(d => (d.processo || "(sem processo)") === proc);
@@ -3142,53 +2705,6 @@
                 }
               });
 
-            } else if (metrica.tipo === "rtk_pct_especial") {
-              const dMesRtk = dadosRtkList.filter(d => {
-                const matchProc = matchRtkItemComOperacao(d, proc);
-
-                const mesNomeArea = formatarDataArea(d.data) || d.data;
-                const mesNomeExt = window.getMesNomeArea ? window.getMesNomeArea(d.data) : d.data;
-                let matchMesChart = (mesNomeArea === mes) || (mesNomeExt === mes) || (d.data === mes) || (String(d.data).includes(mes)) || (String(mes).includes(String(d.data)));
-                if (mes === "(sem data)" && labelsMeses.length === 1) matchMesChart = true;
-
-                return matchProc && matchMesChart;
-              });
-
-              if (dMesRtk.length > 0) {
-                let somV = 0, somP = 0;
-                dMesRtk.forEach(d => {
-                  let pct = parseNum(d.pct_rtk_efetivo);
-                  if (pct <= 1 && pct > 0) pct = pct * 100;
-                  const tempo = parseNum(d.tempo_efetivo) || 1;
-                  if (pct > 0) {
-                    somV += pct * tempo;
-                    somP += tempo;
-                  }
-                });
-                valFinal = somP > 0 ? (somV / somP) : 0;
-              }
-
-              dMesRtk.forEach(d => {
-                const mesNomeArea = formatarDataArea(d.data) || d.data;
-                const mesNomeExt = window.getMesNomeArea ? window.getMesNomeArea(d.data) : d.data;
-                let matchMesSel = true;
-                if (mesSel !== "todos") {
-                  matchMesSel = (mesNomeArea === mesSel) || (mesNomeExt === mesSel) || (d.data === mesSel) || (String(d.data).includes(mesSel)) || (String(mesSel).includes(String(d.data)));
-                }
-                if (matchMesSel) {
-                  const eq = d.equipamento || "(sem info)";
-                  let pct = parseNum(d.pct_rtk_efetivo);
-                  if (pct <= 1 && pct > 0) pct = pct * 100;
-                  const tempo = parseNum(d.tempo_efetivo) || 1;
-                  if (pct > 0) {
-                    equipStats[eq] = (equipStats[eq] || 0) + (pct * tempo);
-                    equipPesos[eq] = (equipPesos[eq] || 0) + tempo;
-                    totalGeralMetrica += (pct * tempo);
-                    somaPesosTotal += tempo;
-                  }
-                }
-              });
-
             } else {
               const dMes = dadosProc.filter(d => (d.mes || "(sem data)") === mes);
               if (dMes.length > 0) {
@@ -3230,7 +2746,7 @@
             return parseFloat(valFinal.toFixed(2));
           });
 
-          if (metrica.tipo === "ponderada" || metrica.tipo === "rtk_pct_especial") {
+          if (metrica.tipo === "ponderada") {
             totalGeralMetrica = somaPesosTotal > 0 ? (totalGeralMetrica / somaPesosTotal) : 0;
             for (let eq in equipStats) {
               equipStats[eq] = equipPesos[eq] > 0 ? (equipStats[eq] / equipPesos[eq]) : 0;
@@ -3316,23 +2832,21 @@
     /* --------------------------------------------------
        TROCA DE ABA PRINCIPAL (MENU)
     -------------------------------------------------- */
-    function switchMainTab(aba) {
-      const abas = ["relatorios", "historico", "area", "horas", "rtk"];
-      abas.forEach(a => {
-        const btn = document.getElementById(`tab-${a}`);
-        const content = document.getElementById(`content-${a}`);
-        if (btn) {
-          if (a === aba) btn.classList.add('active');
-          else btn.classList.remove('active');
-        }
-        if (content) {
-          if (a === aba) content.classList.remove('sl-hidden');
-          else content.classList.add('sl-hidden');
-        }
-      });
-      if (aba === 'horas') renderizarTabelaHoras();
-      if (aba === 'area') renderizarTabelaArea();
-      if (aba === 'rtk') renderizarTabelaRtk();
+    function switchMainTab(tabId) {
+      document.querySelectorAll(".main-tab-btn").forEach(btn => btn.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(content => content.classList.add("sl-hidden"));
+
+      if (tabId === 'relatorios') {
+        document.getElementById("tab-relatorios").classList.add("active");
+        document.getElementById("content-relatorios").classList.remove("sl-hidden");
+      } else if (tabId === 'historico') {
+        document.getElementById("tab-historico").classList.add("active");
+        document.getElementById("content-historico").classList.remove("sl-hidden");
+      } else if (tabId === 'area') {
+        document.getElementById("tab-area").classList.add("active");
+        document.getElementById("content-area").classList.remove("sl-hidden");
+        renderizarTabelaArea();
+      }
     }
 
     /* ──────────────────────────────────────────────
@@ -3550,12 +3064,7 @@
           popularFiltros();
           renderizarTabela();
           atualizarStats();
-          mostrarToast(`✅ ${novos.length} registro(s) importado(s)! Salvando no Firebase...`);
-
-          // Sincroniza com Firestore
-          sincronizarMonitoramentoFirestore(novos).then(n => {
-            if (n) mostrarToast(`🔥 ${n} registros salvos no Firestore!`);
-          });
+          mostrarToast(`✅ ${novos.length} registro(s) importado(s) com sucesso!`);
 
         } catch (err) {
           console.error(err);
@@ -3567,7 +3076,6 @@
       };
       reader.readAsArrayBuffer(arquivo);
     }
-
 
     /* ──────────────────────────────────────────────
        EXPORTAR EXCEL (XLSX)
@@ -3603,7 +3111,7 @@
         mostrarToast("ℹ️ A tabela já está vazia.");
         return;
       }
-      if (!confirm("Deseja realmente limpar todos os dados da tabela? Isso também apagará do Firestore.")) return;
+      if (!confirm("Deseja realmente limpar todos os dados da tabela?")) return;
 
       dados.length = 0;
       salvarDados();
@@ -3614,132 +3122,84 @@
       limparSortHeaders();
 
       const searchInput = document.getElementById("searchInput");
-      if (searchInput) searchInput.value = "";
+      if (searchInput) {
+        searchInput.value = "";
+      }
 
       popularFiltros();
       renderizarTabela();
       atualizarStats();
-      mostrarToast("🗑️ Limpando dados...");
-
-      // Apaga do Firestore também
-      if (typeof window.fbApagarColecao === 'function') {
-        window.fbApagarColecao('monitoramento').then(n => {
-          mostrarToast(`🗑️ ${n} registros apagados do Firestore.`);
-        });
-      }
+      mostrarToast("🗑️ Dados limpos com sucesso!");
     }
 
     /* ──────────────────────────────────────────────
-       GERAR IMAGEM PNG AUTOMATICAMENTE
+       IMPRIMIR / PDF
     ────────────────────────────────────────────── */
     function exportarPDF() {
-      capturarTela();
-    }
-
-
-    /* ──────────────────────────────────────────────
-       GERADOR DE NOME DE ARQUIVO
-    ────────────────────────────────────────────── */
-    function obterNomeArquivoCaptura() {
-      let dataStr = "";
-      if (typeof mesSelecionado !== "undefined" && mesSelecionado && mesSelecionado !== "todos") {
-        dataStr = String(mesSelecionado).replace(/[/\\?%*:|"<>]/g, "-");
-      } else {
-        const now = new Date();
-        const yyyy = now.getFullYear();
-        const mm = String(now.getMonth() + 1).padStart(2, "0");
-        const dd = String(now.getDate()).padStart(2, "0");
-        dataStr = `${dd}-${mm}-${yyyy}`;
-      }
-
-      let procStr = "";
-      if (typeof frentesSelecionadas !== "undefined" && frentesSelecionadas && frentesSelecionadas.length > 0) {
-        procStr = "_" + frentesSelecionadas.map(f => String(f).replace(/[^a-zA-Z0-9]/g, "_")).join("_");
-      }
-
-      return `Relatorio_Monitoramento_PPT_${dataStr}${procStr}.png`;
+      window.print();
     }
 
     /* ──────────────────────────────────────────────
-       PRINT SCREEN (CAPTURAR IMAGEM TOTAL E GERAR AUTOMATICAMENTE)
+       PRINT SCREEN (CAPTURAR TELA E COPIAR)
     ────────────────────────────────────────────── */
     function capturarTela() {
-      const targetEl = document.querySelector('main.content') || document.body;
-      const nomeArquivo = obterNomeArquivoCaptura();
-
+      // Elementos que não devem aparecer no PrintScreen
+      const logoBadge = document.querySelector('.logo-badge');
       const elementsToIgnore = [
-        document.querySelector('body > div:first-child[style*="position:fixed"]'),
-        document.querySelector('body > div[style*="height:40px"]'),
-        document.getElementById('toast')
+        document.querySelector('div[style*="position:fixed"]'), // Barra superior fixa
+        ...document.querySelectorAll('.table-container'), // Tabelas de dados
+        document.querySelector('.page-footer'), // Rodapé
+        document.querySelector('#toast') // Toasts
       ];
-
-      // Oculta todas as imagens <img> se estiver rodando via arquivo local file:// para evitar contaminação do Canvas (Tainted Canvas)
-      const localImgs = document.querySelectorAll('img');
-      if (window.location.protocol === 'file:') {
-        localImgs.forEach(img => elementsToIgnore.push(img));
+      
+      // Se estiver rodando localmente via protocolo file://, removemos o logo para evitar o erro 'Tainted Canvas'
+      if (window.location.protocol === 'file:' && logoBadge) {
+        elementsToIgnore.push(logoBadge);
       }
-
+      
+      // Adiciona temporariamente o atributo de ignorar
       elementsToIgnore.forEach(el => {
         if (el) el.setAttribute('data-html2canvas-ignore', 'true');
       });
 
-      mostrarToast("📷 Gerando imagem total...");
-
-      const origOverflow = document.body.style.overflow;
-      document.body.style.overflow = "visible";
-
-      html2canvas(targetEl, {
+      mostrarToast("📷 Gerando captura dos gráficos e títulos...");
+      
+      // Captura o corpo completo da página (com cabeçalho e gráficos ativos)
+      html2canvas(document.body, {
         backgroundColor: "#f8fafc",
         scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        scrollY: -window.scrollY
+        useCORS: true
       }).then(canvas => {
-        document.body.style.overflow = origOverflow;
+        // Remove o atributo temporário imediatamente após a captura
         elementsToIgnore.forEach(el => {
           if (el) el.removeAttribute('data-html2canvas-ignore');
         });
 
-        try {
-          const dataUrl = canvas.toDataURL("image/png");
-          const link = document.createElement("a");
-          link.href = dataUrl;
-          link.download = nomeArquivo;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-
-          if (canvas.toBlob) {
-            canvas.toBlob(blob => {
-              if (blob && navigator.clipboard && typeof ClipboardItem !== "undefined") {
-                try {
-                  const item = new ClipboardItem({ "image/png": blob });
-                  navigator.clipboard.write([item]).then(() => {
-                    mostrarToast(`✅ Imagem total salva como "${nomeArquivo}" e copiada!`);
-                  }).catch(() => {
-                    mostrarToast(`✅ Imagem total baixada: "${nomeArquivo}"`);
-                  });
-                } catch (e) {
-                  mostrarToast(`✅ Imagem total baixada: "${nomeArquivo}"`);
-                }
-              } else {
-                mostrarToast(`✅ Imagem total baixada: "${nomeArquivo}"`);
-              }
-            }, "image/png");
-          } else {
-            mostrarToast(`✅ Imagem total baixada: "${nomeArquivo}"`);
+        canvas.toBlob(blob => {
+          if (!blob) {
+            mostrarToast("❌ Erro ao converter imagem.");
+            return;
           }
-        } catch (errData) {
-          console.error(errData);
-          mostrarToast("⚠️ Não foi possível gerar a imagem.");
-        }
+          try {
+            const item = new ClipboardItem({ "image/png": blob });
+            navigator.clipboard.write([item]).then(() => {
+              mostrarToast("📋 Captura copiada! Vá ao WhatsApp e aperte Ctrl+V para colar.");
+            }).catch(err => {
+              console.error(err);
+              mostrarToast("❌ Erro de permissão ao copiar. Garanta que a aba está ativa.");
+            });
+          } catch (e) {
+            console.error(e);
+            mostrarToast("❌ Navegador incompatível com a cópia de imagens via clipboard.");
+          }
+        }, "image/png");
       }).catch(err => {
         console.error(err);
-        document.body.style.overflow = origOverflow;
+        // Garante a remoção das marcações em caso de falha
         elementsToIgnore.forEach(el => {
           if (el) el.removeAttribute('data-html2canvas-ignore');
         });
-        mostrarToast("⚠️ Falha ao gerar imagem total.");
+        mostrarToast("❌ Falha na geração do PrintScreen.");
       });
     }
 
@@ -3800,17 +3260,6 @@
 
     function salvarDadosArea() {
       localStorage.setItem("dadosAreaTrabalhada", JSON.stringify(dadosArea));
-    }
-
-    async function sincronizarAreaFirestore(novosRegistros) {
-      if (typeof window.fbSalvarEmLote !== 'function') return;
-      try {
-        const n = await window.fbSalvarEmLote('area_trabalhada', novosRegistros);
-        console.log(`[Firebase] ${n} registros salvos em 'area_trabalhada'.`);
-        return n;
-      } catch (err) {
-        console.warn('[Firebase] Erro ao sincronizar Área Trabalhada:', err);
-      }
     }
 
     /* ------ RENDERIZAR TABELA ------ */
@@ -4181,12 +3630,7 @@
           salvarDadosArea();
           popularFiltroTabelaProcessoArea();
           renderizarTabelaArea();
-          mostrarToast(`${novosRegistros.length} registros importados! Salvando no Firebase...`);
-
-          // Sincroniza com Firestore
-          sincronizarAreaFirestore(novosRegistros).then(n => {
-            if (n) mostrarToast(`🔥 ${n} registros Área Trabalhada salvos no Firestore!`);
-          });
+          mostrarToast(`${novosRegistros.length} registros importados para Área Trabalhada.`);
         } catch (err) {
           console.error(err);
           mostrarToast("Erro ao processar o arquivo Excel.");
@@ -4685,896 +4129,109 @@
       mostrarToast("Exportação concluída!");
     }
 
-
-
-    /* ══════════════════════════════════════════════
-       ABA: RTK
-    ══════════════════════════════════════════════ */
-    let dadosRtk = [
-      {
-        corporativo: "USINA SANTA ADÉLIA",
-        unidade: "PIONEIROS",
-        tipo_equipamento: "Trator Agrícola",
-        cod_fazenda: "FZ-101",
-        fazenda: "SANTA LUCIA",
-        frente: "ENLEIRA P TALHAO",
-        processo: "ENLEIRA P TALHAO",
-        equipamento: "EQ-1042",
-        operador: "JOAO SILVA",
-        tempo_efetivo: 7.5,
-        pct_rtk_efetivo: 94.5,
-        rtk_ligado_efetivo: 7.09,
-        data: "Janeiro"
-      },
-      {
-        corporativo: "USINA SANTA ADÉLIA",
-        unidade: "PIONEIROS",
-        tipo_equipamento: "Colhedora",
-        cod_fazenda: "FZ-102",
-        fazenda: "BOM JESUS",
-        frente: "COLHEITA",
-        processo: "COLHEITA",
-        equipamento: "EQ-2031",
-        operador: "CARLOS SOUZA",
-        tempo_efetivo: 9.0,
-        pct_rtk_efetivo: 88.0,
-        rtk_ligado_efetivo: 7.92,
-        data: "Janeiro"
-      },
-      {
-        corporativo: "USINA SANTA ADÉLIA",
-        unidade: "PIONEIROS",
-        tipo_equipamento: "Pulverizador",
-        cod_fazenda: "FZ-103",
-        fazenda: "BOA VISTA",
-        frente: "PULVERIZAÇÃO",
-        processo: "PULVERIZAÇÃO",
-        equipamento: "EQ-3018",
-        operador: "MARCOS OLIVEIRA",
-        tempo_efetivo: 6.8,
-        pct_rtk_efetivo: 96.2,
-        rtk_ligado_efetivo: 6.54,
-        data: "Janeiro"
-      },
-      {
-        corporativo: "USINA SANTA ADÉLIA",
-        unidade: "PIONEIROS",
-        tipo_equipamento: "Trator Agrícola",
-        cod_fazenda: "FZ-104",
-        fazenda: "SÃO JOSÉ",
-        frente: "PREPARO DE SOLO",
-        processo: "PREPARO DE SOLO",
-        equipamento: "EQ-1055",
-        operador: "PEDRO SANTOS",
-        tempo_efetivo: 8.2,
-        pct_rtk_efetivo: 91.0,
-        rtk_ligado_efetivo: 7.46,
-        data: "Fevereiro"
-      },
-      {
-        corporativo: "USINA SANTA ADÉLIA",
-        unidade: "PIONEIROS",
-        tipo_equipamento: "Plantadeira",
-        cod_fazenda: "FZ-105",
-        fazenda: "ALVORADA",
-        frente: "PLANTIO",
-        processo: "PLANTIO",
-        equipamento: "EQ-5022",
-        operador: "LUCAS FERREIRA",
-        tempo_efetivo: 5.5,
-        pct_rtk_efetivo: 85.0,
-        rtk_ligado_efetivo: 4.68,
-        data: "Fevereiro"
-      },
-      {
-        corporativo: "USINA SANTA ADÉLIA",
-        unidade: "PIONEIROS",
-        tipo_equipamento: "Colhedora",
-        cod_fazenda: "FZ-106",
-        fazenda: "MONTE ALTO",
-        frente: "COLHEITA",
-        processo: "COLHEITA",
-        equipamento: "EQ-2044",
-        operador: "ANDRE COSTA",
-        tempo_efetivo: 11.0,
-        pct_rtk_efetivo: 97.5,
-        rtk_ligado_efetivo: 10.73,
-        data: "Março"
-      }
-    ];
-    let dadosRtkFiltrados = [];
-    let sortRtkCol = -1;
-    let sortRtkAsc = true;
-    let timerRtkFiltro = null;
-    const CAMPOS_RTK = [
-      "corporativo", "unidade", "tipo_equipamento", "cod_fazenda", "fazenda",
-      "frente", "equipamento", "operador", "tempo_efetivo", "pct_rtk_efetivo", "rtk_ligado_efetivo", "data"
-    ];
-    const COLUNAS_RTK_EXPORT = [
-      "Corporativo", "Unidade", "Tipo Equipamento", "Cód. Fazenda", "Fazenda",
-      "Frente", "Equipamento", "Operador", "Tempo Efetivo (h)", "% RTK Efetivo", "RTK Ligado Efetivo (h)", "Data"
-    ];
-
-    (function carregarDadosRtk() {
-      const salvo = localStorage.getItem("dadosMonitoramentoRtkPPT");
-      if (salvo) {
-        try { dadosRtk = JSON.parse(salvo); } catch (e) { console.error("Erro ao carregar dadosRtk", e); }
-      }
-      dadosRtkFiltrados = [...dadosRtk];
-      setTimeout(() => popularFiltroTabelaFrenteRtk(), 100);
-    })();
-
-    function salvarDadosRtk() {
-      localStorage.setItem("dadosMonitoramentoRtkPPT", JSON.stringify(dadosRtk));
-    }
-
-    async function sincronizarRtkFirestore(novosRegistros) {
-      if (typeof window.fbSalvarEmLote !== 'function') return;
-      try {
-        const n = await window.fbSalvarEmLote('rtk_monitoramento', novosRegistros);
-        console.log(`[Firebase] ${n} registros salvos em 'rtk_monitoramento'.`);
-        return n;
-      } catch (err) {
-        console.warn('[Firebase] Erro ao sincronizar RTK:', err);
-      }
-    }
-
-    function popularFiltroTabelaFrenteRtk() {
-      const sel = document.getElementById("filterTabelaFrenteRtk");
-      if (!sel) return;
-      const atual = sel.value;
-      const frentes = [...new Set(dadosRtk.map(d => d.frente || d.tipo_equipamento || "").filter(Boolean))].sort();
-      sel.innerHTML = `<option value="todos">Todas as Frentes/Processos</option>`;
-      frentes.forEach(p => {
-        const opt = document.createElement("option");
-        opt.value = p; opt.textContent = p;
-        if (p === atual) opt.selected = true;
-        sel.appendChild(opt);
-      });
-    }
-
-    function renderizarTabelaRtk() {
-      const tbody = document.getElementById("tableBodyRtk");
-      if (!tbody) return;
-      tbody.innerHTML = "";
-
-      if (dadosRtkFiltrados.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="12" style="text-align:center; padding:40px; color:var(--clr-muted);">
-              Nenhum registro encontrado.
-            </td>
-          </tr>`;
-        atualizarContadoresRtk(0);
-        atualizarCardsStatusRtk();
-        return;
-      }
-
-      dadosRtkFiltrados.forEach(row => {
-        const tr = document.createElement("tr");
-
-        let pctVal = parseFloat(row.pct_rtk_efetivo) || 0;
-        if (pctVal <= 1 && pctVal > 0) pctVal = pctVal * 100;
-        let pillClass = "pill-orange";
-        if (pctVal >= 90) pillClass = "pill-green";
-        else if (pctVal < 75) pillClass = "pill-orange";
-
-        tr.innerHTML = `
-          <td>${esc(row.corporativo ?? "")}</td>
-          <td>${esc(row.unidade ?? "")}</td>
-          <td>${esc(row.tipo_equipamento ?? "")}</td>
-          <td>${esc(row.cod_fazenda ?? "")}</td>
-          <td>${esc(row.fazenda ?? "")}</td>
-          <td class="td-frente">${esc(row.frente ?? "")}</td>
-          <td class="td-equip">${esc(row.equipamento ?? "")}</td>
-          <td>${esc(row.operador ?? "")}</td>
-          <td class="td-num">${row.tempo_efetivo !== undefined && row.tempo_efetivo !== null && row.tempo_efetivo !== "" ? fmt(parseFloat(row.tempo_efetivo), 2) : ""}</td>
-          <td class="td-num"><span class="pill ${pillClass}">${pctVal.toFixed(1)}%</span></td>
-          <td class="td-num">${row.rtk_ligado_efetivo !== undefined && row.rtk_ligado_efetivo !== null && row.rtk_ligado_efetivo !== "" ? fmt(parseFloat(row.rtk_ligado_efetivo), 2) : ""}</td>
-          <td>${esc(row.data ?? "")}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      atualizarContadoresRtk(dadosRtkFiltrados.length);
-      atualizarCardsStatusRtk();
-      renderizarGraficosRtk();
-    }
-
-    function atualizarContadoresRtk(n) {
-      const badge = document.getElementById("badgeCountRtk");
-      const count = document.getElementById("resultsCountRtk");
-      if (badge) badge.textContent = `${n} registro${n !== 1 ? "s" : ""}`;
-      if (count) count.textContent = n > 0 ? `${n} resultado${n !== 1 ? "s" : ""}` : "";
-    }
-
-    function atualizarCardsStatusRtk() {
-      const grid = document.getElementById("rtkStatusCards");
-      if (!grid) return;
-      grid.innerHTML = "";
-
-      const total = dadosRtkFiltrados.length;
-      if (total === 0) {
-        grid.innerHTML = `<p style="color:var(--clr-muted);font-size:.82rem;">Importe dados para visualizar os indicadores de RTK.</p>`;
-        return;
-      }
-
-      let somaTempoEfetivo = 0;
-      let somaRtkLigado = 0;
-      let somaPonderadaPct = 0;
-      const equipSet = new Set();
-
-      dadosRtkFiltrados.forEach(row => {
-        const t = parseFloat(row.tempo_efetivo) || 0;
-        const r = parseFloat(row.rtk_ligado_efetivo) || 0;
-        let p = parseFloat(row.pct_rtk_efetivo) || 0;
-        if (p <= 1 && p > 0) p = p * 100;
-
-        somaTempoEfetivo += t;
-        somaRtkLigado += r;
-        somaPonderadaPct += (p * (t > 0 ? t : 1));
-        if (row.equipamento) equipSet.add(row.equipamento);
-      });
-
-      const pctMedioGeral = somaTempoEfetivo > 0 ? (somaPonderadaPct / somaTempoEfetivo) : (somaPonderadaPct / total);
-
-      const cardsData = [
-        { label: "Tempo Efetivo Total", value: `${fmt(somaTempoEfetivo, 1)} h`, pct: `${total} registros`, cls: "produtivo" },
-        { label: "% RTK Efetivo Médio", value: `${fmt(pctMedioGeral, 1)}%`, pct: "Média Ponderada", cls: "respeitado" },
-        { label: "RTK Ligado Efetivo", value: `${fmt(somaRtkLigado, 1)} h`, pct: "Total acumulado", cls: "default" },
-        { label: "Equipamentos Ativos", value: equipSet.size, pct: "Frota monitorada", cls: "aguardando" }
-      ];
-
-      cardsData.forEach(c => {
-        const card = document.createElement("div");
-        card.className = `area-status-card ${c.cls}`;
-        card.innerHTML = `
-          <div class="area-status-label">${c.label}</div>
-          <div class="area-status-value">${c.value}</div>
-          <div class="area-status-pct">${c.pct}</div>
-        `;
-        grid.appendChild(card);
-      });
-    }
-
-    let chartTopEquipRtkInst = null;
-    let chartTopOperadoresRtkInst = null;
-
-    function renderizarGraficosRtk() {
-      // Top Equipamentos por % RTK
-      if (chartTopEquipRtkInst) { chartTopEquipRtkInst.destroy(); chartTopEquipRtkInst = null; }
-      const canEquip = document.getElementById("chartTopEquipRtk");
-      if (canEquip && dadosRtkFiltrados.length > 0) {
-        const statsEquip = {}, pesosEquip = {};
-        dadosRtkFiltrados.forEach(d => {
-          const eq = d.equipamento || "(sem eq)";
-          let pct = parseFloat(d.pct_rtk_efetivo) || 0;
-          if (pct <= 1 && pct > 0) pct = pct * 100;
-          const tempo = parseFloat(d.tempo_efetivo) || 1;
-          statsEquip[eq] = (statsEquip[eq] || 0) + (pct * tempo);
-          pesosEquip[eq] = (pesosEquip[eq] || 0) + tempo;
-        });
-
-        const top5Equip = Object.keys(statsEquip)
-          .map(k => ({ label: k, val: pesosEquip[k] > 0 ? (statsEquip[k] / pesosEquip[k]) : 0 }))
-          .sort((a, b) => b.val - a.val)
-          .slice(0, 5);
-
-        chartTopEquipRtkInst = new Chart(canEquip.getContext("2d"), {
-          type: "bar",
-          data: {
-            labels: top5Equip.map(x => x.label),
-            datasets: [{
-              label: "% RTK Efetivo",
-              data: top5Equip.map(x => parseFloat(x.val.toFixed(1))),
-              backgroundColor: "rgba(16, 185, 129, 0.75)",
-              borderColor: "rgba(16, 185, 129, 1)",
-              borderWidth: 1, borderRadius: 6, barPercentage: 0.55
-            }]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: { display: false },
-              tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(1)}%` } },
-              datalabels: {
-                anchor: 'end', align: 'top', offset: 4, color: '#000000',
-                font: { size: 12, weight: 'bold' },
-                formatter: v => `${v.toFixed(1)}%`
-              }
-            },
-            scales: {
-              x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-              y: { beginAtZero: true, max: 100, grid: { color: "rgba(0,0,0,0.05)" }, ticks: { font: { size: 10 }, callback: v => `${v}%` } }
-            }
-          }
-        });
-      }
-
-      // Top Operadores por % RTK
-      if (chartTopOperadoresRtkInst) { chartTopOperadoresRtkInst.destroy(); chartTopOperadoresRtkInst = null; }
-      const canOp = document.getElementById("chartTopOperadoresRtk");
-      if (canOp && dadosRtkFiltrados.length > 0) {
-        const statsOp = {}, pesosOp = {};
-        dadosRtkFiltrados.forEach(d => {
-          const op = d.operador || "(sem operador)";
-          let pct = parseFloat(d.pct_rtk_efetivo) || 0;
-          if (pct <= 1 && pct > 0) pct = pct * 100;
-          const tempo = parseFloat(d.tempo_efetivo) || 1;
-          statsOp[op] = (statsOp[op] || 0) + (pct * tempo);
-          pesosOp[op] = (pesosOp[op] || 0) + tempo;
-        });
-
-        const top5Op = Object.keys(statsOp)
-          .map(k => ({ label: k, val: pesosOp[k] > 0 ? (statsOp[k] / pesosOp[k]) : 0 }))
-          .sort((a, b) => b.val - a.val)
-          .slice(0, 5);
-
-        chartTopOperadoresRtkInst = new Chart(canOp.getContext("2d"), {
-          type: "bar",
-          data: {
-            labels: top5Op.map(x => x.label),
-            datasets: [{
-              label: "% RTK Efetivo",
-              data: top5Op.map(x => parseFloat(x.val.toFixed(1))),
-              backgroundColor: "rgba(6, 182, 212, 0.75)",
-              borderColor: "rgba(6, 182, 212, 1)",
-              borderWidth: 1, borderRadius: 6, barPercentage: 0.55
-            }]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: { display: false },
-              tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(1)}%` } },
-              datalabels: {
-                anchor: 'end', align: 'top', offset: 4, color: '#000000',
-                font: { size: 12, weight: 'bold' },
-                formatter: v => `${v.toFixed(1)}%`
-              }
-            },
-            scales: {
-              x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-              y: { beginAtZero: true, max: 100, grid: { color: "rgba(0,0,0,0.05)" }, ticks: { font: { size: 10 }, callback: v => `${v}%` } }
-            }
-          }
-        });
-      }
-    }
-
-    function filtrarTabelaRtkDebounced() {
-      clearTimeout(timerRtkFiltro);
-      timerRtkFiltro = setTimeout(filtrarTabelaRtk, 300);
-    }
-
-    function filtrarTabelaRtk() {
-      const termo = (document.getElementById("searchInputRtk")?.value ?? "").toLowerCase().trim();
-      const selProc = document.getElementById("filterTabelaFrenteRtk");
-      const procSel = selProc ? selProc.value : "todos";
-
-      if (!termo && procSel === "todos") {
-        dadosRtkFiltrados = [...dadosRtk];
-      } else {
-        dadosRtkFiltrados = dadosRtk.filter(row => {
-          let mt = true, mp = true;
-          if (termo) {
-            mt = CAMPOS_RTK.some(c => String(row[c] ?? "").toLowerCase().includes(termo));
-          }
-          if (procSel !== "todos") {
-            mp = (row.frente === procSel) || (row.tipo_equipamento === procSel);
-          }
-          return mt && mp;
-        });
-      }
-      if (sortRtkCol >= 0) aplicarOrdemRtk();
-      renderizarTabelaRtk();
-    }
-
-    function ordenarTabelaRtk(col) {
-      if (sortRtkCol === col) sortRtkAsc = !sortRtkAsc;
-      else { sortRtkCol = col; sortRtkAsc = true; }
-
-      for (let i = 0; i <= 11; i++) {
-        const th = document.getElementById(`rth-${i}`);
-        if (th) th.classList.remove("sort-asc", "sort-desc");
-      }
-      const thAtivo = document.getElementById(`rth-${col}`);
-      if (thAtivo) thAtivo.classList.add(sortRtkAsc ? "sort-asc" : "sort-desc");
-
-      aplicarOrdemRtk();
-      renderizarTabelaRtk();
-    }
-
-    function aplicarOrdemRtk() {
-      const campo = CAMPOS_RTK[sortRtkCol];
-      if (!campo) return;
-      dadosRtkFiltrados.sort((a, b) => {
-        let va = a[campo] ?? "", vb = b[campo] ?? "";
-        const na = parseFloat(va), nb = parseFloat(vb);
-        if (!isNaN(na) && !isNaN(nb)) return sortRtkAsc ? na - nb : nb - na;
-        va = String(va).toLowerCase(); vb = String(vb).toLowerCase();
-        return sortRtkAsc ? va.localeCompare(vb) : vb.localeCompare(va);
-      });
-    }
-
-    function limparDadosRtk() {
-      if (!confirm("Deseja apagar todos os registros de RTK? Isso também apagará do Firestore.")) return;
-      dadosRtk = []; dadosRtkFiltrados = [];
-      localStorage.removeItem("dadosMonitoramentoRtkPPT");
-      const inp = document.getElementById("searchInputRtk"); if (inp) inp.value = "";
-      const sel = document.getElementById("filterTabelaFrenteRtk"); if (sel) sel.value = "todos";
-      popularFiltroTabelaFrenteRtk();
-      sortRtkCol = -1;
-      for (let i = 0; i <= 11; i++) {
-        const th = document.getElementById(`rth-${i}`);
-        if (th) th.classList.remove("sort-asc", "sort-desc");
-      }
-      renderizarTabelaRtk();
-      mostrarToast("Dados de RTK apagados.");
-      // Apaga do Firestore
-      if (typeof window.fbApagarColecao === 'function') {
-        window.fbApagarColecao('rtk_monitoramento').then(n => {
-          mostrarToast(`🗑️ ${n} registros RTK apagados do Firestore.`);
-        });
-      }
-    }
-
-    function processarExcelRtk(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        try {
-          const wb = XLSX.read(e.target.result, { type: "binary" });
-          const ws = wb.Sheets[wb.SheetNames[0]];
-          const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
-          if (rows.length < 2) { mostrarToast("Planilha vazia ou sem dados."); return; }
-
-          let headerRowIndex = 0;
-          for (let i = 0; i < Math.min(rows.length, 10); i++) {
-            const r = rows[i];
-            if (r) {
-              let matches = 0;
-              r.forEach(c => {
-                const s = String(c).toLowerCase();
-                if (s.includes("rtk") || s.includes("fazenda") || s.includes("equipamento") || s.includes("frente") || s.includes("operador")) {
-                  matches++;
-                }
-              });
-              if (matches >= 2) { headerRowIndex = i; break; }
-            }
-          }
-
-          const cabecalho = rows[headerRowIndex].map(c => String(c).trim());
-          const idx = str => cabecalho.findIndex(h => h.toLowerCase().includes(str.toLowerCase()));
-
-          const iCorp = idx("corp");
-          const iUnid = idx("unid");
-          const iTipo = cabecalho.findIndex(h => h.toLowerCase().includes("tipo"));
-          const iCodFaz = cabecalho.findIndex(h => (h.toLowerCase().includes("cód") || h.toLowerCase().includes("cod")) && h.toLowerCase().includes("faz"));
-          const iFaz = cabecalho.findIndex((h, i) => h.toLowerCase().includes("fazenda") && i !== iCodFaz);
-          const iFrente = idx("frent");
-          let iEquip = cabecalho.findIndex((h, i) => (h.toLowerCase().includes("equip") || h.toLowerCase().includes("frota")) && i !== iTipo);
-          if (iEquip === -1) iEquip = idx("equip");
-          const iOperador = idx("operador") !== -1 ? idx("operador") : idx("op");
-          const iTempo = cabecalho.findIndex(h => h.toLowerCase().includes("tempo") || (h.toLowerCase().includes("efetivo") && !h.toLowerCase().includes("rtk")));
-          const iPctRtk = cabecalho.findIndex(h => h.toLowerCase().includes("%") || h.toLowerCase().includes("pct") || (h.toLowerCase().includes("rtk") && h.toLowerCase().includes("efetivo") && !h.toLowerCase().includes("ligado")));
-          const iRtkLigado = cabecalho.findIndex(h => h.toLowerCase().includes("ligado") || (h.toLowerCase().includes("rtk") && h.toLowerCase().includes("h")));
-          const iData = idx("data") !== -1 ? idx("data") : idx("mes");
-
-          const safeGet = (row, index, def = "") => (index >= 0 && index < row.length) ? String(row[index] ?? "").trim() : def;
-
-          const parseNum = (val) => {
-            if (val === null || val === undefined || val === "") return 0;
-            if (typeof val === "number") return isNaN(val) ? 0 : val;
-            let str = String(val).trim().replace("%", "").replace(",", ".");
-            const num = parseFloat(str);
-            return isNaN(num) ? 0 : num;
-          };
-
-          const novos = [];
-          for (let i = headerRowIndex + 1; i < rows.length; i++) {
-            const r = rows[i];
-            if (r.every(c => c === "" || c === null || c === undefined)) continue;
-
-            const tEfetivo = parseNum(r[iTempo]);
-            let pctRtk = parseNum(r[iPctRtk]);
-            let rtkLigado = parseNum(r[iRtkLigado]);
-
-            if (pctRtk <= 1 && pctRtk > 0) pctRtk = pctRtk * 100;
-            if (rtkLigado === 0 && tEfetivo > 0 && pctRtk > 0) {
-              rtkLigado = (tEfetivo * pctRtk) / 100;
-            }
-            if (pctRtk === 0 && tEfetivo > 0 && rtkLigado > 0) {
-              pctRtk = (rtkLigado / tEfetivo) * 100;
-            }
-
-            novos.push({
-              corporativo: safeGet(r, iCorp, "USINA SANTA ADÉLIA"),
-              unidade: safeGet(r, iUnid, ""),
-              tipo_equipamento: safeGet(r, iTipo, ""),
-              cod_fazenda: safeGet(r, iCodFaz, ""),
-              fazenda: safeGet(r, iFaz, ""),
-              frente: safeGet(r, iFrente, ""),
-              equipamento: safeGet(r, iEquip, ""),
-              operador: safeGet(r, iOperador, ""),
-              tempo_efetivo: tEfetivo,
-              pct_rtk_efetivo: pctRtk,
-              rtk_ligado_efetivo: rtkLigado,
-              data: safeGet(r, iData, "")
-            });
-          }
-
-          if (novos.length === 0) { mostrarToast("Nenhum registro válido encontrado."); return; }
-
-          dadosRtk = [...dadosRtk, ...novos];
-          dadosRtkFiltrados = [...dadosRtk];
-          salvarDadosRtk();
-          popularFiltroTabelaFrenteRtk();
-          renderizarTabelaRtk();
-          mostrarToast(`${novos.length} registros importados para RTK! Salvando no Firebase...`);
-
-          // Sincroniza com Firestore
-          sincronizarRtkFirestore(novos).then(n => {
-            if (n) mostrarToast(`🔥 ${n} registros RTK salvos no Firestore!`);
-          });
-        } catch (err) {
-          console.error(err);
-          mostrarToast("Erro ao processar o arquivo Excel.");
+    function switchMainTab(aba) {
+      const abas = ["relatorios", "historico", "area", "horas"];
+      abas.forEach(a => {
+        const btn = document.getElementById(`tab-${a}`);
+        const content = document.getElementById(`content-${a}`);
+        if (btn) {
+          if (a === aba) btn.classList.add('active');
+          else btn.classList.remove('active');
         }
-      };
-      reader.readAsBinaryString(file);
-      event.target.value = "";
-    }
-
-    function exportarExcelRtk() {
-      if (dadosRtkFiltrados.length === 0) { mostrarToast("Nenhum dado para exportar."); return; }
-      const exportData = dadosRtkFiltrados.map(row => {
-        let p = parseFloat(row.pct_rtk_efetivo) || 0;
-        if (p <= 1 && p > 0) p = p * 100;
-        return {
-          "Corporativo": row.corporativo ?? "",
-          "Unidade": row.unidade ?? "",
-          "Tipo Equipamento": row.tipo_equipamento ?? "",
-          "Cód. Fazenda": row.cod_fazenda ?? "",
-          "Fazenda": row.fazenda ?? "",
-          "Frente": row.frente ?? "",
-          "Equipamento": row.equipamento ?? "",
-          "Operador": row.operador ?? "",
-          "Tempo Efetivo (h)": row.tempo_efetivo ?? 0,
-          "% RTK Efetivo": `${p.toFixed(1)}%`,
-          "RTK Ligado Efetivo (h)": row.rtk_ligado_efetivo ?? 0,
-          "Data": row.data ?? ""
-        };
+        if (content) {
+          if (a === aba) content.classList.remove('sl-hidden');
+          else content.classList.add('sl-hidden');
+        }
       });
-      const ws = XLSX.utils.json_to_sheet(exportData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Monitoramento RTK");
-      const now = new Date();
-      const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
-      XLSX.writeFile(wb, `Monitoramento_RTK_${stamp}.xlsx`);
-      mostrarToast("Exportação concluída!");
+      if (aba === 'horas') renderizarTabelaHoras();
     }
   </script>
 
-  <!-- ===== FIREBASE SDK ===== -->
-  <script type="module">
-    // Firebase SDK via CDN (modular)
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-    import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js";
-    import {
-      getFirestore,
-      collection,
-      getDocs,
-      addDoc,
-      writeBatch,
-      doc,
-      query,
-      orderBy,
-      serverTimestamp,
-      deleteDoc,
-      limit
-    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
-
-    // Configuração do projeto Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyD2XWTFxjX56Le2TXTR-FRg0BI6iLLgGXc",
-      authDomain: "base-monitoramento-ppt.firebaseapp.com",
-      projectId: "base-monitoramento-ppt",
-      storageBucket: "base-monitoramento-ppt.firebasestorage.app",
-      messagingSenderId: "451296266787",
-      appId: "1:451296266787:web:d95c502446702d23e0bf96",
-      measurementId: "G-MS3VRG4LYD"
-    };
-
-    // Inicializa Firebase
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-    const db = getFirestore(app);
-
-    // Registra visualização de página
-    logEvent(analytics, "page_view", {
-      page_title: "Relatório de Monitoramento PPT",
-      page_location: window.location.href
-    });
-
-    // ── Expõe objetos e funções para o script principal (não-module) ──
-    window.firebaseApp = app;
-    window.firebaseDb  = db;
-    window.firebaseAnalytics = analytics;
-
-    // Referências de coleções
-    window.fbCol = {
-      monitoramento:     () => collection(db, "monitoramento"),
-      rtk_monitoramento: () => collection(db, "rtk_monitoramento"),
-      area_trabalhada:   () => collection(db, "area_trabalhada"),
-      horas_operacionais:() => collection(db, "horas_operacionais")
-    };
-
-    // ── Salvar em lote (batch write) ──────────────────────────────────
-    window.fbSalvarEmLote = async function(nomeColecao, registros) {
-      if (!registros || registros.length === 0) return 0;
-      const colRef = collection(db, nomeColecao);
-      const BATCH_LIMIT = 499; // Firestore permite 500 por batch
-      let total = 0;
-      for (let i = 0; i < registros.length; i += BATCH_LIMIT) {
-        const batch = writeBatch(db);
-        const fatia = registros.slice(i, i + BATCH_LIMIT);
-        fatia.forEach(reg => {
-          const docRef = doc(colRef);
-          const payload = { ...reg };
-          // Remove campos undefined
-          Object.keys(payload).forEach(k => { if (payload[k] === undefined) delete payload[k]; });
-          payload._importado_em = serverTimestamp();
-          batch.set(docRef, payload);
-        });
-        await batch.commit();
-        total += fatia.length;
-      }
-      return total;
-    };
-
-    // ── Carregar coleção completa ─────────────────────────────────────
-    window.fbCarregarColecao = async function(nomeColecao) {
-      try {
-        const colRef = collection(db, nomeColecao);
-        const snap = await getDocs(query(colRef, orderBy("_importado_em", "desc"), limit(5000)));
-        return snap.docs.map(d => {
-          const data = d.data();
-          delete data._importado_em; // Remove campo interno
-          return data;
-        });
-      } catch (err) {
-        console.warn(`[Firebase] Erro ao carregar ${nomeColecao}:`, err.message);
-        return null; // Retorna null para indicar falha (usa localStorage como fallback)
-      }
-    };
-
-    // ── Apagar coleção completa ───────────────────────────────────────
-    window.fbApagarColecao = async function(nomeColecao) {
-      try {
-        const colRef = collection(db, nomeColecao);
-        const snap = await getDocs(colRef);
-        const batch = writeBatch(db);
-        snap.docs.forEach(d => batch.delete(d.ref));
-        await batch.commit();
-        return snap.docs.length;
-      } catch (err) {
-        console.warn(`[Firebase] Erro ao apagar ${nomeColecao}:`, err.message);
-        return 0;
-      }
-    };
-
-    // Indica que o Firebase está pronto
-    window._firebaseReady = true;
-    document.dispatchEvent(new CustomEvent("firebaseReady"));
-    console.log("✅ Firebase inicializado — Projeto: base-monitoramento-ppt");
-  </script>
-
-
-  <!-- ===== ESTILOS DE IMPRESSÃO (PAISAGEM / LANDSCAPE) ===== -->
+  <!-- ===== ESTILOS DE IMPRESSÃO ===== -->
   <style media="print">
-    @page {
-      size: landscape;
-      margin: 8mm;
-    }
-
-    * {
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-
     body {
-      background: #ffffff !important;
-      color: #000000 !important;
-      font-size: 9pt;
-      margin: 0;
-      padding: 0;
+      background: #fff;
+      color: #000;
+      font-size: 10pt;
     }
 
-    /* Ocultar a barra superior de retorno e utilitários da tela */
-    body > div:first-child[style*="position:fixed"],
-    body > div[style*="height:40px"],
+    .page-header {
+      position: static;
+      background: #fff;
+      border-bottom: 2px solid #000;
+      padding: 10px;
+      box-shadow: none;
+    }
+
+    .logo-badge,
     .toolbar,
+    .search-bar-wrapper,
+    .stats-grid,
     #toast,
-    .btn-top-nav,
-    input[type="file"],
-    .search-input-wrap,
-    .results-count,
-    .buttons-operacao-container {
+    .chart-container-card,
+    .main-tabs-container,
+    .filter-wrapper {
       display: none !important;
     }
 
-    /* Faixa de Cabeçalho (Relatório de Monitoramento PPT) */
-    .page-header {
-      position: static !important;
-      background: linear-gradient(90deg, #1e293b, #0f172a) !important;
-      color: #ffffff !important;
-      border-radius: 8px !important;
-      padding: 12px 18px !important;
-      margin-top: 0 !important;
-      margin-bottom: 16px !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: space-between !important;
-      box-shadow: none !important;
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
-    }
-
     .header-titles h1 {
-      color: #ffffff !important;
-      font-size: 15pt !important;
-      font-weight: 700 !important;
-      margin: 0 !important;
+      color: #000;
+      font-size: 14pt;
     }
 
     .header-titles p {
-      color: #cbd5e1 !important;
-      font-size: 9pt !important;
-      margin-top: 2px !important;
+      color: #444;
     }
 
-    .logo-badge {
-      display: flex !important;
-    }
-
-    /* Menu de Abas Principal */
-    .main-tabs-container {
-      display: flex !important;
-      gap: 8px !important;
-      margin-bottom: 16px !important;
-      border-bottom: 2px solid #e2e8f0 !important;
-      padding-bottom: 4px !important;
-    }
-
-    .main-tab-btn {
-      font-size: 9pt !important;
-      padding: 6px 12px !important;
-      border-radius: 6px !important;
-    }
-
-    /* Filtros (Slicers de Processo e Data) */
-    .filter-wrapper {
-      display: flex !important;
-      flex-wrap: wrap !important;
-      background: #f8fafc !important;
-      border: 1px solid #cbd5e1 !important;
-      padding: 10px 14px !important;
-      border-radius: 8px !important;
-      margin-bottom: 16px !important;
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
-    }
-
-    .filter-label {
-      color: #334155 !important;
-      font-weight: 700 !important;
-    }
-
-    .slicer-btn {
-      font-size: 8pt !important;
-      padding: 3px 8px !important;
-      border: 1px solid #cbd5e1 !important;
-    }
-
-    /* Seções de Indicadores e Gráficos */
-    .stats-grid,
-    .area-status-grid,
-    .area-charts-row,
-    #containerRelatorioHorasEquip,
-    #monthlyChartsContainer {
-      display: flex !important;
-      flex-wrap: wrap !important;
-      gap: 14px !important;
-      margin-bottom: 16px !important;
-    }
-
-    .stat-card,
-    .area-status-card,
-    .chart-container-card {
-      display: block !important;
-      background: #ffffff !important;
-      border: 1px solid #cbd5e1 !important;
-      box-shadow: none !important;
-      border-radius: 8px !important;
-      padding: 12px !important;
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
-    }
-
-    .stat-label,
-    .chart-card-title {
-      color: #0f172a !important;
-      font-weight: 700 !important;
-      font-size: 9.5pt !important;
-    }
-
-    canvas {
-      max-width: 100% !important;
-      height: auto !important;
-    }
-
-    /* Tabelas de Dados */
     .table-container {
-      border: 1px solid #cbd5e1 !important;
-      box-shadow: none !important;
-      margin-bottom: 16px !important;
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
+      border: 1px solid #ccc;
+      box-shadow: none;
     }
 
     .table-header-bar {
-      background: #f1f5f9 !important;
-      border-bottom: 1px solid #cbd5e1 !important;
-      padding: 8px 12px !important;
+      background: #f0f0f0;
+      border-bottom: 1px solid #ccc;
     }
 
     .table-title {
-      color: #0f172a !important;
-      font-weight: 700 !important;
-      font-size: 10pt !important;
-    }
-
-    table {
-      width: 100% !important;
-      border-collapse: collapse !important;
-      font-size: 8.5pt !important;
-    }
-
-    th {
-      background: #e2e8f0 !important;
-      color: #1e293b !important;
-      font-weight: 700 !important;
-      border-bottom: 2px solid #cbd5e1 !important;
-      padding: 6px 8px !important;
-    }
-
-    td {
-      padding: 5px 8px !important;
-      border-bottom: 1px solid #e2e8f0 !important;
-      color: #334155 !important;
-    }
-
-    tbody tr:nth-child(even) {
-      background: #f8fafc !important;
+      color: #000;
     }
 
     .badge-blue {
-      background: #e2e8f0 !important;
-      color: #1e293b !important;
-      border: 1px solid #cbd5e1 !important;
+      background: #e0e0e0;
+      color: #333;
+      border: 1px solid #999;
     }
 
-    .pill {
-      border-radius: 4px !important;
-      padding: 2px 6px !important;
-      font-weight: 700 !important;
+    table {
+      font-size: 9pt;
+    }
+
+    th {
+      background: #e8e8e8;
+      color: #333;
+      border-bottom: 2px solid #999;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+
+    .td-processo {
+      color: #1a56db;
+    }
+
+    .td-equip {
+      color: #7c3aed;
+    }
+
+    .td-frente {
+      color: #555;
     }
 
     .page-footer {
-      color: #64748b !important;
-      border-top: 1px solid #cbd5e1 !important;
+      color: #555;
+      border-top: 1px solid #ccc;
     }
   </style>
 
