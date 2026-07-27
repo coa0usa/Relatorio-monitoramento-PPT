@@ -1617,6 +1617,18 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script>
+    function safeLocalStorageSet(key, value) {
+      try {
+        localStorage.setItem(key, value);
+      } catch (e) {
+        console.error(`Erro ao salvar no localStorage (${key}):`, e);
+        if (e.name === 'QuotaExceededError' || e.code === 22) {
+          if (typeof mostrarToast === 'function') {
+            mostrarToast("⚠️ Limite de memória local atingido no navegador. O histórico não pôde ser guardado localmente.", 5000);
+          }
+        }
+      }
+    }
     /* ──────────────────────────────────────────────
        DADOS DE EXEMPLO
        Substitua este array pelos seus dados reais
@@ -1733,7 +1745,7 @@
 
     // Salva dados no localStorage (sempre) e sincroniza com Firestore (se disponível)
     function salvarDados() {
-      localStorage.setItem('dadosMonitoramentoPPT', JSON.stringify(dados));
+      safeLocalStorageSet('dadosMonitoramentoPPT', JSON.stringify(dados));
     }
 
     // Sincroniza array 'dados' com a coleção Firestore 'monitoramento'
@@ -1811,7 +1823,7 @@
         window.fbCarregarColecao('monitoramento').then(registros => {
           if (registros && registros.length > 0) {
             dados = registros;
-            localStorage.setItem('dadosMonitoramentoPPT', JSON.stringify(dados));
+            safeLocalStorageSet('dadosMonitoramentoPPT', JSON.stringify(dados));
             dadosFiltrados = dados.filter(d => (d.velocidadeMedia ?? 0) >= VEL_MIN);
             popularFiltros();
             renderizarTabela();
@@ -1824,7 +1836,7 @@
         window.fbCarregarColecao('rtk_monitoramento').then(registros => {
           if (registros && registros.length > 0) {
             dadosRtk = registros;
-            localStorage.setItem('dadosMonitoramentoRtkPPT', JSON.stringify(dadosRtk));
+            safeLocalStorageSet('dadosMonitoramentoRtkPPT', JSON.stringify(dadosRtk));
             dadosRtkFiltrados = [...dadosRtk];
             popularFiltroTabelaFrenteRtk();
             renderizarTabelaRtk();
@@ -1836,7 +1848,7 @@
         window.fbCarregarColecao('area_trabalhada').then(registros => {
           if (registros && registros.length > 0) {
             dadosArea = registros;
-            localStorage.setItem('dadosAreaTrabalhada', JSON.stringify(dadosArea));
+            safeLocalStorageSet('dadosAreaTrabalhada', JSON.stringify(dadosArea));
             dadosAreaFiltrados = [...dadosArea];
             if (typeof popularFiltroTabelaProcessoArea === 'function') popularFiltroTabelaProcessoArea();
             if (typeof renderizarTabelaArea === 'function') renderizarTabelaArea();
@@ -1848,7 +1860,7 @@
         window.fbCarregarColecao('horas_operacionais').then(registros => {
           if (registros && registros.length > 0) {
             dadosHoras = registros;
-            localStorage.setItem('dadosHorasOperacionais', JSON.stringify(dadosHoras));
+            safeLocalStorageSet('dadosHorasOperacionais', JSON.stringify(dadosHoras));
             dadosHorasFiltrados = [...dadosHoras];
             if (typeof popularFiltroTabelaProcessoHoras === 'function') popularFiltroTabelaProcessoHoras();
             if (typeof renderizarTabelaHoras === 'function') renderizarTabelaHoras();
@@ -3439,6 +3451,7 @@
 
       const reader = new FileReader();
       reader.onload = function (e) {
+        let novos = []; // Declarado fora do try para ficar acessivel na sincronizacao do Firebase
         try {
           const workbook = XLSX.read(e.target.result, { type: "array" });
           const planilha = workbook.Sheets[workbook.SheetNames[0]];
@@ -3450,13 +3463,13 @@
           }
 
           // Encontra a linha de cabeçalho (a primeira que tiver pelo menos 2 cabeçalhos esperados)
-          let headerRowIndex = 0;
+          let headerRowIndex = -1;
           for (let i = 0; i < Math.min(linhas.length, 10); i++) {
             const row = linhas[i];
-            if (row) {
+            if (Array.isArray(row)) {
               let matches = 0;
               row.forEach(c => {
-                const str = String(c).toLowerCase();
+                const str = String(c ?? "").toLowerCase();
                 if (str.includes("frente") || str.includes("equipamento") || str.includes("motor") || str.includes("rpm") || str.includes("consumo")) {
                   matches++;
                 }
@@ -3468,7 +3481,16 @@
             }
           }
 
-          const cabecalho = linhas[headerRowIndex].map(c => String(c).trim());
+          if (headerRowIndex === -1) {
+            headerRowIndex = 0; // fallback
+          }
+
+          if (!linhas[headerRowIndex] || !Array.isArray(linhas[headerRowIndex])) {
+            mostrarToast("⚠️ Cabeçalho da planilha não encontrado.");
+            return;
+          }
+
+          const cabecalho = linhas[headerRowIndex].map(c => String(c ?? "").trim());
           const idx = campo => cabecalho.findIndex(
             h => h.toLowerCase().includes(campo.toLowerCase())
           );
@@ -3532,8 +3554,8 @@
             return isNaN(num) ? 0 : num;
           };
 
-          const novos = linhas.slice(headerRowIndex + 1)
-            .filter(l => l.some(c => c !== ""))
+          novos = linhas.slice(headerRowIndex + 1)
+            .filter(l => Array.isArray(l) && l.some(c => c !== ""))
             .map(l => {
               const valMotor = safeGet(l, iMotor, "");
               const motorLigadoVal = safeParseFloat(valMotor);
@@ -3826,7 +3848,7 @@
     })();
 
     function salvarDadosArea() {
-      localStorage.setItem("dadosAreaTrabalhada", JSON.stringify(dadosArea));
+      safeLocalStorageSet("dadosAreaTrabalhada", JSON.stringify(dadosArea));
     }
 
     async function sincronizarAreaFirestore(novosRegistros) {
@@ -4189,11 +4211,11 @@
           const novosRegistros = [];
           for (let i = 1; i < rows.length; i++) {
             const r = rows[i];
-            // Ignora linhas completamente vazias
-            if (r.every(c => c === "" || c === null || c === undefined)) continue;
+            // Ignora linhas completamente vazias ou invalidas
+            if (!Array.isArray(r) || r.every(c => c === "" || c === null || c === undefined)) continue;
             const obj = {};
             for (const [campo, idx] of Object.entries(mapa)) {
-              obj[campo] = idx >= 0 ? String(r[idx] ?? "").trim() : "";
+              obj[campo] = idx >= 0 && r[idx] !== undefined && r[idx] !== null ? String(r[idx]).trim() : "";
             }
             // Converte Qtd para número se possível
             if (obj.qtd !== "") {
@@ -4275,7 +4297,7 @@
     })();
 
     function salvarDadosHoras() {
-      localStorage.setItem("dadosHorasOperacionais", JSON.stringify(dadosHoras));
+      safeLocalStorageSet("dadosHorasOperacionais", JSON.stringify(dadosHoras));
     }
 
     async function sincronizarHorasFirestore(novosRegistros) {
@@ -4320,10 +4342,10 @@
           const novosRegistros = [];
           for (let i = 1; i < rows.length; i++) {
             const r = rows[i];
-            if (r.every(c => c === "" || c === null || c === undefined)) continue;
+            if (!Array.isArray(r) || r.every(c => c === "" || c === null || c === undefined)) continue;
             const obj = {};
             for (const [campo, idx] of Object.entries(mapa)) {
-              obj[campo] = idx >= 0 ? String(r[idx] ?? "").trim() : "";
+              obj[campo] = idx >= 0 && r[idx] !== undefined && r[idx] !== null ? String(r[idx]).trim() : "";
             }
             if (obj.segundos !== "") {
               const nSeg = parseFloat(String(obj.segundos).replace(",", "."));
@@ -4859,7 +4881,7 @@
     })();
 
     function salvarDadosRtk() {
-      localStorage.setItem("dadosMonitoramentoRtkPPT", JSON.stringify(dadosRtk));
+      safeLocalStorageSet("dadosMonitoramentoRtkPPT", JSON.stringify(dadosRtk));
     }
 
     async function sincronizarRtkFirestore(novosRegistros) {
@@ -5189,7 +5211,7 @@
           let headerRowIndex = 0;
           for (let i = 0; i < Math.min(rows.length, 10); i++) {
             const r = rows[i];
-            if (r) {
+            if (Array.isArray(r)) {
               let matches = 0;
               r.forEach(c => {
                 const s = String(c).toLowerCase();
@@ -5230,7 +5252,7 @@
 
           for (let i = headerRowIndex + 1; i < rows.length; i++) {
             const r = rows[i];
-            if (r.every(c => c === "" || c === null || c === undefined)) continue;
+            if (!Array.isArray(r) || r.every(c => c === "" || c === null || c === undefined)) continue;
 
             const tEfetivo = parseNum(r[iTempo]);
             let pctRtk     = parseNum(r[iPctRtk]);
