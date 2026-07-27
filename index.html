@@ -1621,12 +1621,7 @@
       try {
         localStorage.setItem(key, value);
       } catch (e) {
-        console.error(`Erro ao salvar no localStorage (${key}):`, e);
-        if (e.name === 'QuotaExceededError' || e.code === 22) {
-          if (typeof mostrarToast === 'function') {
-            mostrarToast("⚠️ Limite de memória local atingido no navegador. O histórico não pôde ser guardado localmente.", 5000);
-          }
-        }
+        console.warn(`[LocalStorage] Limite de armazenamento local excedido para (${key}). O histórico continuará visível e salvo no Firebase, mas não será cacheado localmente no navegador.`, e);
       }
     }
     /* ──────────────────────────────────────────────
@@ -2645,7 +2640,7 @@
           responsive: true,
           maintainAspectRatio: false,
           layout: {
-            padding: { top: 20 }
+            padding: { top: 35 }
           },
           plugins: {
             legend: { display: false },
@@ -2660,6 +2655,7 @@
               anchor: 'end',
               align: 'top',
               offset: 2,
+              rotation: -90,
               color: '#000000',
               backgroundColor: null,
               borderWidth: 0,
@@ -3013,7 +3009,7 @@
       if (!containerMensal) return;
       containerMensal.innerHTML = ""; // Limpa os gráficos anteriores
 
-      const dadosBase = dados.filter(d => {
+      const dadosBase = dadosList.filter(d => {
         const opNorm = window.normalizeText(d.processo);
         const macro = window.mapaOpMacroProcesso ? window.mapaOpMacroProcesso[opNorm] : null;
         const processoAUsar = macro || d.processo;
@@ -3291,7 +3287,7 @@
           statCard.appendChild(statLabel);
           statCard.appendChild(chartWrapper);
 
-          const equipEntries = Object.entries(equipStats).sort((a, b) => b[1] - a[1]);
+          const equipEntries = Object.entries(equipStats).sort((a, b) => String(a[0]).localeCompare(String(b[0]), undefined, { numeric: true, sensitivity: "base" }));
           if (equipEntries.length > 0) {
             const maxVal = Math.max(...equipEntries.map(e => e[1]));
             const equipListHtml = equipEntries.map(([eq, val]) => {
@@ -4187,6 +4183,7 @@
       if (!file) return;
       const reader = new FileReader();
       reader.onload = function (e) {
+        let novosRegistros = []; // Declarado fora para ficar acessivel ao Firebase
         try {
           const wb = XLSX.read(e.target.result, { type: "binary" });
           const ws = wb.Sheets[wb.SheetNames[0]];
@@ -4208,7 +4205,7 @@
             qtd: headers.findIndex(h => h.includes("qtd") || h.includes("quant"))
           };
 
-          const novosRegistros = [];
+          novosRegistros = [];
           for (let i = 1; i < rows.length; i++) {
             const r = rows[i];
             // Ignora linhas completamente vazias ou invalidas
@@ -4317,6 +4314,7 @@
       if (!file) return;
       const reader = new FileReader();
       reader.onload = function (e) {
+        let novosRegistros = []; // Declarado fora para ficar acessivel ao Firebase
         try {
           const wb = XLSX.read(e.target.result, { type: "binary" });
           const ws = wb.Sheets[wb.SheetNames[0]];
@@ -4339,7 +4337,7 @@
             horas: headers.findIndex(h => h.includes("hora"))
           };
 
-          const novosRegistros = [];
+          novosRegistros = [];
           for (let i = 1; i < rows.length; i++) {
             const r = rows[i];
             if (!Array.isArray(r) || r.every(c => c === "" || c === null || c === undefined)) continue;
